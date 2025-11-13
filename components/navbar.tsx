@@ -1,12 +1,11 @@
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <nav className="mx-3 my-5  sticky top-0 z-50">
-      <div className=" mx-auto mb-3 px-6 lg:px-12">
+    <nav className="mx-3 my-5 sticky top-0 z-50">
+      <div className="mx-auto px-6 lg:px-12">
         <div className="flex justify-between py-2">
-          <Link href="/" className="flex items-start">
+          <a href="https://ezyinfra.dev/" target="_blank" className="flex items-start">
             <Image
               src="/ezyinfra.png"
               alt="EzyInfra"
@@ -15,7 +14,7 @@ export default function Navbar() {
               className="h-10 w-auto"
               priority
             />
-          </Link>
+          </a>
         </div>
       </div>
     </nav>

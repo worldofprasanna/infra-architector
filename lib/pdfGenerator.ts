@@ -18,9 +18,20 @@ const getScoreGrade = (percentage: number): string => {
 
 const getScoreColor = (percentage: number): [number, number, number] => {
   if (percentage >= 80) return [34, 197, 94] // green
-  if (percentage >= 60) return [59, 130, 246] // blue
-  if (percentage >= 40) return [251, 191, 36] // yellow
+  if (percentage >= 60) return [234, 179, 8] // yellow
   return [239, 68, 68] // red
+}
+
+const getPointsColor = (points: number): [number, number, number] => {
+  if (points === 10) return [220, 252, 231] // light green background
+  if (points === 7) return [254, 249, 195] // light yellow background
+  return [254, 226, 226] // light red background (for 5 and 3 points)
+}
+
+const getPointsTextColor = (points: number): [number, number, number] => {
+  if (points === 10) return [21, 128, 61] // dark green text
+  if (points === 7) return [161, 98, 7] // dark yellow text
+  return [185, 28, 28] // dark red text (for 5 and 3 points)
 }
 
 const getOverallMessage = (percentage: number): string => {
@@ -164,80 +175,7 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
     yPosition += 15
   })
 
-  // Detailed Analysis Section
-  doc.addPage()
-  yPosition = margin
-
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(0, 0, 0)
-  doc.text('Detailed Analysis', margin, yPosition)
-  yPosition += 10
-
-  questions.forEach((question, index) => {
-    const selectedOptionId = data.answers[question.id]
-    const selectedOption = question.options.find(opt => opt.id === selectedOptionId)
-
-    if (!selectedOption) return
-
-    const maxPoints = Math.max(...question.options.map(opt => opt.points))
-    const isGap = selectedOption.points < maxPoints * 0.6 // Less than 60% of max points is a gap
-
-    checkNewPage(50)
-
-    // Question header with potential gap highlight
-    if (isGap) {
-      doc.setFillColor(254, 226, 226) // light red background for gaps
-      doc.rect(margin - 2, yPosition - 5, pageWidth - margin * 2 + 4, 8, 'F')
-    }
-
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-    doc.text(`${index + 1}. ${question.question}`, margin, yPosition)
-    yPosition += 7
-
-    // Category badge
-    doc.setFillColor(219, 234, 254)
-    doc.setTextColor(30, 64, 175)
-    doc.setFontSize(8)
-    doc.roundedRect(margin, yPosition, 40, 5, 1, 1, 'F')
-    doc.text(categoryNames[question.category], margin + 20, yPosition + 3.5, { align: 'center' })
-    yPosition += 8
-
-    // Selected answer
-    doc.setFontSize(10)
-    doc.setTextColor(0, 0, 0)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Your Answer:', margin + 5, yPosition)
-    yPosition += 5
-
-    doc.setFont('helvetica', 'normal')
-    doc.text(`${selectedOption.text} (${selectedOption.points} points)`, margin + 5, yPosition)
-    yPosition += 7
-
-    // Description with gap indicator
-    if (isGap) {
-      doc.setTextColor(185, 28, 28)
-      doc.setFont('helvetica', 'bold')
-      doc.text('⚠ Potential Gap Identified:', margin + 5, yPosition)
-      yPosition += 5
-    }
-
-    doc.setTextColor(60, 60, 60)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    const descLines = wrapText(selectedOption.description, pageWidth - margin * 2 - 10)
-    descLines.forEach(line => {
-      checkNewPage()
-      doc.text(line, margin + 5, yPosition)
-      yPosition += 4
-    })
-
-    yPosition += 8
-  })
-
-  // Recommendations Section
+  // Recommendations Section (moved before Detailed Analysis)
   doc.addPage()
   yPosition = margin
 
@@ -314,6 +252,75 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
       yPosition += 5
     })
     yPosition += 3
+  })
+
+  // Detailed Analysis Section (moved to the end)
+  doc.addPage()
+  yPosition = margin
+
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(0, 0, 0)
+  doc.text('Detailed Analysis', margin, yPosition)
+  yPosition += 10
+
+  questions.forEach((question, index) => {
+    const selectedOptionId = data.answers[question.id]
+    const selectedOption = question.options.find(opt => opt.id === selectedOptionId)
+
+    if (!selectedOption) return
+
+    checkNewPage(50)
+
+    // Background color based on points scored
+    const bgColor = getPointsColor(selectedOption.points)
+    const textColor = getPointsTextColor(selectedOption.points)
+
+    // Draw background for the entire question block
+    doc.setFillColor(...bgColor)
+    doc.rect(margin - 2, yPosition - 5, pageWidth - margin * 2 + 4, 10, 'F')
+
+    // Question with category badge inline
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...textColor)
+    const questionText = `${index + 1}. ${question.question}`
+    doc.text(questionText, margin, yPosition)
+
+    // Category badge right next to question on the same line
+    const questionWidth = doc.getTextWidth(questionText)
+    doc.setFillColor(219, 234, 254)
+    doc.setTextColor(30, 64, 175)
+    doc.setFontSize(8)
+    const badgeWidth = doc.getTextWidth(categoryNames[question.category]) + 4
+    doc.roundedRect(margin + questionWidth + 3, yPosition - 3, badgeWidth, 5, 1, 1, 'F')
+    doc.text(categoryNames[question.category], margin + questionWidth + 5, yPosition + 0.5)
+
+    yPosition += 8
+
+    // Selected answer
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Your Answer:', margin + 5, yPosition)
+    yPosition += 5
+
+    doc.setFont('helvetica', 'normal')
+    doc.text(`${selectedOption.text} (${selectedOption.points} points)`, margin + 5, yPosition)
+    yPosition += 7
+
+    // Description
+    doc.setTextColor(60, 60, 60)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    const descLines = wrapText(selectedOption.description, pageWidth - margin * 2 - 10)
+    descLines.forEach(line => {
+      checkNewPage()
+      doc.text(line, margin + 5, yPosition)
+      yPosition += 4
+    })
+
+    yPosition += 8
   })
 
   // Footer on last page

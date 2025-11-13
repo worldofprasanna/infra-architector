@@ -1,22 +1,80 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { questions, type Category } from '@/data/questions'
+import { useState, useEffect, useRef } from 'react'
+import { questions, type Category, categoryNames, maxScorePerCategory, maxTotalScore } from '@/data/questions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { ChevronRight, ChevronLeft, Keyboard } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { Input } from '@/components/ui/input'
+import { ChevronRight, ChevronLeft, Keyboard, Mail, Trophy, TrendingUp, Shield, Server, Layers, Home, Download } from 'lucide-react'
 import Image from "next/image"
+import { supabase, type EvaluationResult } from '@/lib/supabase'
+
+type Phase = 'quiz' | 'email' | 'results'
+
+const categoryIcons: Record<Category, React.ReactNode> = {
+  infrastructure: <Server className="w-5 h-5" />,
+  tech_stack: <Layers className="w-5 h-5" />,
+  security: <Shield className="w-5 h-5" />,
+  scalability: <TrendingUp className="w-5 h-5" />
+}
+
+const getScoreColor = (percentage: number) => {
+  if (percentage >= 80) return 'text-green-600 bg-green-50 border-green-200'
+  if (percentage >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
+  return 'text-red-600 bg-red-50 border-red-200'
+}
+
+const getGradeBadgeColor = (percentage: number) => {
+  if (percentage >= 80) return 'bg-gradient-to-br from-green-500 to-emerald-600'
+  if (percentage >= 60) return 'bg-gradient-to-br from-yellow-500 to-orange-600'
+  return 'bg-gradient-to-br from-red-500 to-rose-600'
+}
+
+const getProgressBarColor = (percentage: number) => {
+  if (percentage >= 80) return '[&>div]:bg-green-600'
+  if (percentage >= 60) return '[&>div]:bg-yellow-500'
+  return '[&>div]:bg-red-600'
+}
+
+const getCardGradient = (percentage: number) => {
+  if (percentage >= 80) return 'from-green-300 via-emerald-400 to-teal-500'
+  if (percentage >= 60) return 'from-yellow-300 via-amber-400 to-orange-500'
+  return 'from-red-300 via-rose-400 to-pink-500'
+}
+
+const getScoreGrade = (percentage: number) => {
+  if (percentage >= 90) return 'A+'
+  if (percentage >= 80) return 'A'
+  if (percentage >= 70) return 'B'
+  if (percentage >= 60) return 'C'
+  if (percentage >= 50) return 'D'
+  return 'F'
+}
+
+const getOverallMessage = (percentage: number) => {
+  if (percentage >= 80) return "Excellent! Your infrastructure is well-architected and production-ready."
+  if (percentage >= 60) return "Good foundation! There are some areas for improvement to reach excellence."
+  if (percentage >= 40) return "Moderate setup. Consider upgrading key areas to improve reliability and scalability."
+  return "Significant improvements needed. Focus on core infrastructure, security, and scalability."
+}
 
 export default function Quiz() {
+  const [phase, setPhase] = useState<Phase>('quiz')
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(true)
   const [transitioning, setTransitioning] = useState(false)
-  const router = useRouter()
+  const [scores, setScores] = useState<Record<Category, number> | null>(null)
+  const [email, setEmail] = useState('')
+  const [emailError, setEmailError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
+  const hasSaved = useRef(false)
 
   const progress = ((currentQuestion + 1) / questions.length) * 100
   const currentQ = questions[currentQuestion]
@@ -31,19 +89,16 @@ export default function Quiz() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Allow number keys 1-9 to pick an answer
       const index = parseInt(e.key)
+
       if (!isNaN(index) && index >= 1 && index <= currentQ.options.length) {
         const option = currentQ.options[index - 1]
         handleAnswerChange(option.id)
+        setTimeout(() => {
+          handleNext()
+        }, 1000)
       }
 
-      // Enter → Next
-      if (e.key === "Enter" && selectedAnswer) {
-        handleNext()
-      }
-
-      // Backspace or ArrowLeft → Previous
       if (e.key === "Backspace" || e.key === "ArrowLeft") {
         handlePrevious()
       }
@@ -51,7 +106,7 @@ export default function Quiz() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentQuestion, selectedAnswer, currentQ])
+  }, [currentQuestion, currentQ])
 
   const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
@@ -61,7 +116,8 @@ export default function Quiz() {
         setTransitioning(false)
       }, 150)
     } else {
-      const scores: Record<Category, number> = {
+      // Calculate scores
+      const calculatedScores: Record<Category, number> = {
         infrastructure: 0,
         tech_stack: 0,
         security: 0,
@@ -72,13 +128,12 @@ export default function Quiz() {
         const question = questions.find(q => q.id === parseInt(questionId))
         const option = question?.options.find(opt => opt.id === optionId)
         if (option && question) {
-          scores[question.category] += option.points
+          calculatedScores[question.category] += option.points
         }
       })
 
-      sessionStorage.setItem('evaluationScores', JSON.stringify(scores))
-      sessionStorage.setItem('evaluationAnswers', JSON.stringify(answers))
-      router.push('/email')
+      setScores(calculatedScores)
+      setPhase('email')
     }
   }
 
@@ -96,11 +151,407 @@ export default function Quiz() {
     setAnswers({ ...answers, [currentQ.id]: value })
   }
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setEmailError('')
+
+    if (!email) {
+      setEmailError('Please enter your business email')
+      return
+    }
+
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    // Save to Supabase
+    if (scores && !hasSaved.current) {
+      hasSaved.current = true
+      await saveToSupabase(email, scores)
+    }
+
+    setIsSubmitting(false)
+    setPhase('results')
+  }
+
+  const saveToSupabase = async (email: string, scores: Record<Category, number>) => {
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0)
+
+      const evaluation: EvaluationResult = {
+        email,
+        infrastructure_score: scores.infrastructure,
+        tech_stack_score: scores.tech_stack,
+        security_score: scores.security,
+        scalability_score: scores.scalability,
+        total_score: totalScore
+      }
+
+      const { error } = await supabase
+        .from('evaluations')
+        .insert([evaluation])
+
+      if (error) {
+        console.error('Supabase error:', error)
+        setSaveError('Failed to save results. But you can still view them below.')
+      }
+    } catch (error) {
+      console.error('Error saving to Supabase:', error)
+      setSaveError('Failed to save results. But you can still view them below.')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const downloadPDF = async () => {
+    if (!scores || !email || !answers) {
+      return
+    }
+
+    setIsDownloadingPDF(true)
+
+    try {
+      const response = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          scores,
+          answers
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF')
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `infrastructure-audit-${Date.now()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error downloading PDF:', error)
+      alert('Failed to download PDF. Please try again.')
+    } finally {
+      setIsDownloadingPDF(false)
+    }
+  }
+
+  const resetQuiz = () => {
+    setPhase('quiz')
+    setCurrentQuestion(0)
+    setAnswers({})
+    setScores(null)
+    setEmail('')
+    setEmailError('')
+    hasSaved.current = false
+  }
+
+  // Render Email Phase
+  if (phase === 'email') {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left info section */}
+          <div className="text-center lg:text-left space-y-6">
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
+              Almost There!
+            </h1>
+            <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
+              Enter your business email to view your infrastructure evaluation results and receive a personalized report.
+            </p>
+            <Button
+              size="lg"
+              variant="default"
+              className='p-7 text-lg font-bold'
+            >
+              Reach Our Team
+            </Button>
+          </div>
+
+          {/* Right - Email Card */}
+          <div className="relative">
+            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-blue-300 via-violet-500 to-pink-700 blur-xl animate-gradient opacity-90" />
+            <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6">
+              <Card className="shadow-2xl rounded-2xl border border-gray-100">
+                <CardHeader className="text-center">
+                  <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                    <Mail className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-2xl">Get Your Results</CardTitle>
+                  <CardDescription className="text-base">
+                    Enter your business email to continue
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleEmailSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Business Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@company.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="h-12"
+                        autoFocus
+                      />
+                      {emailError && (
+                        <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                      )}
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full h-12"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Processing...' : 'View My Results'}
+                    </Button>
+
+                    <p className="text-xs text-gray-500 text-center">
+                      Your email will be used to save your evaluation results. We respect your privacy and won't spam you.
+                    </p>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Logos */}
+        <div className="mt-20 flex flex-col items-center space-y-6">
+          <p className="text-sm uppercase text-gray-500 tracking-wide">
+            Our Esteemed Clients
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
+            <Image src="/dacio-logo.png" alt="CNN" width={100} height={40} className="h-8 w-auto" />
+            <Image src="/finin.png" alt="TechCrunch" width={120} height={40} className="h-8 w-auto" />
+            <Image src="/nd.png" alt="Vice" width={100} height={40} className="h-8 w-auto" />
+            <Image src="/taxnodes.png" alt="Fashionista" width={140} height={40} className="h-8 w-auto" />
+            <Image src="/merchantspring_logo.jpeg" alt="a16z" width={80} height={40} className="h-8 w-auto" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render Results Phase
+  if (phase === 'results' && scores) {
+    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0)
+    const overallPercentage = Math.round((totalScore / maxTotalScore) * 100)
+
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left info section */}
+          <div className="text-center lg:text-left space-y-6">
+            <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
+              Your Infrastructure Evaluation
+            </h1>
+            {isSaving && (
+              <p className="text-sm text-blue-600">Saving your results...</p>
+            )}
+            {saveError && (
+              <p className="text-sm text-yellow-600">{saveError}</p>
+            )}
+            <Button
+              size="lg"
+              variant="default"
+              className='p-7 text-lg font-bold'
+            >
+              Reach Our Team
+            </Button>
+          </div>
+
+          {/* Right - Results Card */}
+          <div className="relative">
+            <div className={`absolute inset-1 rounded-3xl bg-gradient-to-br ${getCardGradient(overallPercentage)} blur-xl animate-gradient opacity-90`} />
+            <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6 max-h-[80vh] overflow-y-auto">
+              {/* Overall Score */}
+              <Card className="shadow-2xl mb-6 border-2">
+                <CardHeader className="text-center pb-4">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mb-2">
+                    <Trophy className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <CardTitle className="text-2xl mb-2">
+                    Overall Score: {overallPercentage}%
+                  </CardTitle>
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${getGradeBadgeColor(overallPercentage)} text-white text-2xl font-bold mb-2`}>
+                   {getScoreGrade(overallPercentage)}
+                  </div>
+                  <CardDescription className="text-sm">
+                    {getOverallMessage(overallPercentage)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Progress value={overallPercentage} className={`h-3 ${getProgressBarColor(overallPercentage)}`} />
+                  <p className="text-center text-sm text-gray-600 mt-2">
+                    {totalScore} out of {maxTotalScore} points
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Category Scores */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {(Object.keys(scores) as Category[]).map((category) => {
+                  const score = scores[category]
+                  const categoryMax = maxScorePerCategory[category]
+                  const percentage = Math.round((score / categoryMax) * 100)
+                  const colorClass = getScoreColor(percentage)
+                  const progressColor = getProgressBarColor(percentage)
+
+                  return (
+                    <Card key={category} className={`shadow-lg border-2 ${colorClass}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2 text-sm">
+                            {categoryIcons[category]}
+                            <span className="hidden sm:inline">{categoryNames[category]}</span>
+                          </CardTitle>
+                          <span className="text-lg font-bold">{percentage}%</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pb-3">
+                        <Progress value={percentage} className={`h-2 mb-1 ${progressColor}`} />
+                        <p className="text-xs">
+                          {score}/{categoryMax} pts
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Action Buttons */}
+              <Card className="shadow-xl mb-6">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      size="lg"
+                      onClick={downloadPDF}
+                      disabled={isDownloadingPDF}
+                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      <Download className="w-4 h-4" />
+                      {isDownloadingPDF ? 'Generating...' : 'Download Report'}
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      onClick={resetQuiz}
+                      className="flex items-center justify-center gap-2"
+                    >
+                      <Home className="w-4 h-4" />
+                      Take Quiz Again
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Next Steps */}
+              <Card className="shadow-xl">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Next Steps</CardTitle>
+                </CardHeader>
+                <CardContent className="pb-4">
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    {overallPercentage < 60 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">1.</span>
+                          <span>Improve security measures - SSL/HTTPS and authentication</span>
+                        </li> 
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">2.</span>
+                          <span>Set up automated backups</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">3.</span>
+                          <span>Consider managed cloud platform</span>
+                        </li>
+                      </>
+                    )}
+                    {overallPercentage >= 60 && overallPercentage < 80 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">1.</span>
+                          <span>Implement CI/CD pipelines</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">2.</span>
+                          <span>Add monitoring and alerting</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">3.</span>
+                          <span>Plan for horizontal scaling</span>
+                        </li>
+                      </>
+                    )}
+                    {overallPercentage >= 80 && (
+                      <>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">1.</span>
+                          <span>Monitor and optimize performance</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">2.</span>
+                          <span>Document your architecture</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold">3.</span>
+                          <span>Consider chaos engineering</span>
+                        </li>
+                      </>
+                    )}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Logos */}
+        <div className="mt-20 flex flex-col items-center space-y-6">
+          <p className="text-sm uppercase text-gray-500 tracking-wide">
+            Our Esteemed Clients
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
+            <Image src="/dacio-logo.png" alt="CNN" width={100} height={40} className="h-8 w-auto" />
+            <Image src="/finin.png" alt="TechCrunch" width={120} height={40} className="h-8 w-auto" />
+            <Image src="/nd.png" alt="Vice" width={100} height={40} className="h-8 w-auto" />
+            <Image src="/taxnodes.png" alt="Fashionista" width={140} height={40} className="h-8 w-auto" />
+            <Image src="/merchantspring_logo.jpeg" alt="a16z" width={80} height={40} className="h-8 w-auto" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render Quiz Phase (default)
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
       {/* Two-column layout */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        
+
         {/* Left info section */}
         <div className="text-center lg:text-left space-y-6">
           <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
@@ -115,13 +566,13 @@ export default function Quiz() {
             variant="default"
             className='p-7 text-lg font-bold'
           >
-            Reach Our Team 
+            Reach Our Team
           </Button>
-        </div>  
+        </div>
 
         {/* Right - Quiz Card */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-400 via-violet-400 to-pink-400 blur-xl opacity-50" />
+          <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-blue-300 via-violet-500 to-pink-700 blur-xl animate-gradient opacity-90" />
           <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6">
             {/* Keyboard Shortcuts Help */}
             {showShortcutsHelp && (
@@ -200,7 +651,7 @@ export default function Quiz() {
                     disabled={!selectedAnswer}
                     className="group"
                   >
-                    {currentQuestion === questions.length - 1 ? 'View Results' : 'Next'}
+                    {currentQuestion === questions.length - 1 ? 'Continue' : 'Next'}
                     {currentQuestion !== questions.length - 1 && (
                       <>
                         <ChevronRight className="w-4 h-4 ml-2" />
