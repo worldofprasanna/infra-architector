@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Infrastructure Evaluator",
   description: "know about your infrastructure in minutes",
+
+  icons: {
+    icon: "/ezyinfra-icon.png",
+  }
 };
 
 export default function RootLayout({

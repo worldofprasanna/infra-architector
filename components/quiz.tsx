@@ -9,8 +9,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { ChevronRight, ChevronLeft, Keyboard, Mail, Trophy, TrendingUp, Shield, Server, Layers, Home, Download } from 'lucide-react'
-import Image from "next/image"
 import { supabase, type EvaluationResult } from '@/lib/supabase'
+import TalkToUsButton from './TalkToUsButton'
+import ClientLogos from './ClientLogos'
 
 type Phase = 'quiz' | 'email' | 'results'
 
@@ -96,7 +97,7 @@ export default function Quiz() {
         handleAnswerChange(option.id)
         setTimeout(() => {
           handleNext()
-        }, 1000)
+        }, 800)
       }
 
       if (e.key === "Backspace" || e.key === "ArrowLeft") {
@@ -268,7 +269,7 @@ export default function Quiz() {
   // Render Email Phase
   if (phase === 'email') {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
+      <div className="h-[calc(100vh-4rem)] bg-white py-6 px-6 lg:px-12 flex flex-col justify-between">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left info section */}
           <div className="text-center lg:text-left space-y-6">
@@ -278,13 +279,7 @@ export default function Quiz() {
             <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
               Enter your business email to view your infrastructure evaluation results and receive a personalized report.
             </p>
-            <Button
-              size="lg"
-              variant="default"
-              className='p-7 text-lg font-bold'
-            >
-              Reach Our Team
-            </Button>
+            <TalkToUsButton />
           </div>
 
           {/* Right - Email Card */}
@@ -321,7 +316,8 @@ export default function Quiz() {
 
                     <Button
                       type="submit"
-                      className="w-full h-12"
+                      variant="outline"
+                      className="w-full h-12 border-2 rounded-3xl border-gray-500 font-bold text-gray-700 bg-gray-50 hover:bg-gray-800 hover:border-none hover:text-white transition-all duration-300"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? 'Processing...' : 'View My Results'}
@@ -337,19 +333,7 @@ export default function Quiz() {
           </div>
         </div>
 
-        {/* Logos */}
-        <div className="mt-20 flex flex-col items-center space-y-6">
-          <p className="text-sm uppercase text-gray-500 tracking-wide">
-            Our Esteemed Clients
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
-            <Image src="/dacio-logo.png" alt="CNN" width={100} height={40} className="h-8 w-auto" />
-            <Image src="/finin.png" alt="TechCrunch" width={120} height={40} className="h-8 w-auto" />
-            <Image src="/nd.png" alt="Vice" width={100} height={40} className="h-8 w-auto" />
-            <Image src="/taxnodes.png" alt="Fashionista" width={140} height={40} className="h-8 w-auto" />
-            <Image src="/merchantspring_logo.jpeg" alt="a16z" width={80} height={40} className="h-8 w-auto" />
-          </div>
-        </div>
+        <ClientLogos />
       </div>
     )
   }
@@ -360,7 +344,7 @@ export default function Quiz() {
     const overallPercentage = Math.round((totalScore / maxTotalScore) * 100)
 
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
+      <div className="calc(100vh - 4rem) bg-white py-8 px-6 lg:px-12 flex flex-col justify-between">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left info section */}
           <div className="text-center lg:text-left space-y-6">
@@ -373,18 +357,12 @@ export default function Quiz() {
             {saveError && (
               <p className="text-sm text-yellow-600">{saveError}</p>
             )}
-            <Button
-              size="lg"
-              variant="default"
-              className='p-7 text-lg font-bold'
-            >
-              Reach Our Team
-            </Button>
+            <TalkToUsButton />
           </div>
 
           {/* Right - Results Card */}
           <div className="relative">
-            <div className={`absolute inset-1 rounded-3xl bg-gradient-to-br ${getCardGradient(overallPercentage)} blur-xl animate-gradient opacity-90`} />
+            <div className={`absolute inset-1 rounded-3xl bg-gradient-to-br ${getCardGradient(overallPercentage)} blur-xl animate-gradient opacity-60`} />
             <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6 max-h-[80vh] overflow-y-auto">
               {/* Overall Score */}
               <Card className="shadow-2xl mb-6 border-2">
@@ -447,9 +425,10 @@ export default function Quiz() {
                   <div className="flex flex-col gap-3">
                     <Button
                       size="lg"
+                      variant="outline"
                       onClick={downloadPDF}
                       disabled={isDownloadingPDF}
-                      className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                      className="flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
                     >
                       <Download className="w-4 h-4" />
                       {isDownloadingPDF ? 'Generating...' : 'Download Report'}
@@ -458,7 +437,7 @@ export default function Quiz() {
                       size="lg"
                       variant="outline"
                       onClick={resetQuiz}
-                      className="flex items-center justify-center gap-2"
+                      className="flex items-center justify-center gap-2 transition-all hover:scale-105 hover:shadow-lg hover:bg-gray-100"
                     >
                       <Home className="w-4 h-4" />
                       Take Quiz Again
@@ -528,64 +507,44 @@ export default function Quiz() {
             </div>
           </div>
         </div>
-
-        {/* Logos */}
-        <div className="mt-20 flex flex-col items-center space-y-6">
-          <p className="text-sm uppercase text-gray-500 tracking-wide">
-            Our Esteemed Clients
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
-            <Image src="/dacio-logo.png" alt="CNN" width={100} height={40} className="h-8 w-auto" />
-            <Image src="/finin.png" alt="TechCrunch" width={120} height={40} className="h-8 w-auto" />
-            <Image src="/nd.png" alt="Vice" width={100} height={40} className="h-8 w-auto" />
-            <Image src="/taxnodes.png" alt="Fashionista" width={140} height={40} className="h-8 w-auto" />
-            <Image src="/merchantspring_logo.jpeg" alt="a16z" width={80} height={40} className="h-8 w-auto" />
-          </div>
-        </div>
       </div>
     )
   }
 
   // Render Quiz Phase (default)
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-6 lg:px-12 flex flex-col justify-between">
+    <div className="h-[calc(100vh-4rem)] bg-white px-6 py-4 lg:px-12 flex flex-col justify-between">
       {/* Two-column layout */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center flex-1">
 
         {/* Left info section */}
-        <div className="text-center lg:text-left space-y-6">
-          <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
+        <div className="text-center lg:text-left space-y-4">
+          <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
             Evaluate Your Infrastructure in Just 2 Minutes 🚀
           </h1>
-          <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
+          <p className="text-base text-gray-600 max-w-md mx-auto lg:mx-0">
             Spend a few minutes to understand your current infrastructure and
             receive a personalized improvement report.
           </p>
-          <Button
-            size="lg"
-            variant="default"
-            className='p-7 text-lg font-bold'
-          >
-            Reach Our Team
-          </Button>
+          <TalkToUsButton />
         </div>
 
         {/* Right - Quiz Card */}
         <div className="relative">
-          <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-blue-300 via-violet-500 to-pink-700 blur-xl animate-gradient opacity-90" />
-          <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6">
+          <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-green-500 via-yellow-200 to-green-200 blur-xl animate-gradient opacity-90" />
+          <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-4">
             {/* Keyboard Shortcuts Help */}
             {showShortcutsHelp && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
                 <Keyboard className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-xs text-blue-800">
-                  <p className="font-semibold mb-1">Keyboard shortcuts enabled:</p>
+                  <p className="font-semibold mb-0.5">Keyboard shortcuts enabled:</p>
                   <p>Press <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">1-{currentQ.options.length}</kbd> to select • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Enter</kbd> to continue • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">←</kbd> to go back</p>
                 </div>
               </div>
             )}
 
-            <div className="mb-6">
+            <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Question {currentQuestion + 1} of {questions.length}</span>
                 <span>{Math.round(progress)}% Complete</span>
@@ -594,11 +553,11 @@ export default function Quiz() {
             </div>
 
             <Card className={`shadow-2xl rounded-2xl border border-gray-100 transition-opacity duration-150 ${transitioning ? 'opacity-50' : 'opacity-100'}`}>
-              <CardHeader>
-                <CardTitle className="text-2xl font-semibold text-gray-900">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xl font-semibold text-gray-900">
                   {currentQ.question}
                 </CardTitle>
-                <CardDescription className="text-gray-500">
+                <CardDescription className="text-sm text-gray-500">
                   Select the option that best describes your current setup
                 </CardDescription>
               </CardHeader>
@@ -607,12 +566,12 @@ export default function Quiz() {
                 <RadioGroup
                   value={selectedAnswer}
                   onValueChange={handleAnswerChange}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
                   {currentQ.options.map((option, i) => (
                     <div
                       key={option.id}
-                      className={`group flex items-center space-x-3 border-2 rounded-xl p-4 transition-all cursor-pointer hover:bg-gray-50 hover:border-blue-300 ${
+                      className={`group flex items-center space-x-3 border-2 rounded-xl p-3 transition-all cursor-pointer hover:bg-gray-50 hover:border-blue-300 ${
                         selectedAnswer === option.id
                           ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
                           : 'border-gray-200'
@@ -620,7 +579,7 @@ export default function Quiz() {
                       onClick={() => handleAnswerChange(option.id)}
                     >
                       {/* Keyboard Shortcut Badge */}
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-lg border-2 flex items-center justify-center font-mono text-sm font-bold transition-all ${
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono text-xs font-bold transition-all ${
                         selectedAnswer === option.id
                           ? 'bg-blue-500 border-blue-600 text-white'
                           : 'bg-gray-100 border-gray-300 text-gray-600 group-hover:bg-blue-100 group-hover:border-blue-400 group-hover:text-blue-700'
@@ -628,19 +587,19 @@ export default function Quiz() {
                         {i + 1}
                       </div>
                       <RadioGroupItem value={option.id} id={option.id} className="flex-shrink-0" />
-                      <Label htmlFor={option.id} className="flex-1 cursor-pointer text-base font-medium">
+                      <Label htmlFor={option.id} className="flex-1 cursor-pointer text-sm font-medium">
                         {option.text}
                       </Label>
                     </div>
                   ))}
                 </RadioGroup>
 
-                <div className="flex justify-between items-center mt-8 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center mt-6 pt-3 border-t border-gray-200">
                   <Button
                     variant="outline"
                     onClick={handlePrevious}
                     disabled={currentQuestion === 0}
-                    className="group"
+                    className="group transition-all hover:scale-105 hover:shadow-md hover:bg-gray-100"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Previous
@@ -649,7 +608,7 @@ export default function Quiz() {
                   <Button
                     onClick={handleNext}
                     disabled={!selectedAnswer}
-                    className="group"
+                    className="group transition-all hover:scale-105 hover:shadow-md"
                   >
                     {currentQuestion === questions.length - 1 ? 'Continue' : 'Next'}
                     {currentQuestion !== questions.length - 1 && (
@@ -666,19 +625,8 @@ export default function Quiz() {
         </div>
       </div>
 
-      {/* Logos */}
-      <div className="mt-20 flex flex-col items-center space-y-6">
-        <p className="text-sm uppercase text-gray-500 tracking-wide">
-          Our Esteemed Clients
-        </p>
-
-        <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
-          <Image src="/dacio-logo.png" alt="CNN" width={100} height={40} className="h-8 w-auto" />
-          <Image src="/finin.png" alt="TechCrunch" width={120} height={40} className="h-8 w-auto" />
-          <Image src="/nd.png" alt="Vice" width={100} height={40} className="h-8 w-auto" />
-          <Image src="/taxnodes.png" alt="Fashionista" width={140} height={40} className="h-8 w-auto" />
-          <Image src="/merchantspring_logo.jpeg" alt="a16z" width={80} height={40} className="h-8 w-auto" />
-        </div>
+      <div className="mt-8 pb-4">
+        <ClientLogos />
       </div>
     </div>
   )
