@@ -77,7 +77,9 @@ export default function Quiz() {
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
   const hasSaved = useRef(false)
 
-  const progress = ((currentQuestion + 1) / questions.length) * 100
+  // Calculate progress based on answered questions, not current question
+  const answeredCount = Object.keys(answers).length
+  const progress = (answeredCount / questions.length) * 100
   const currentQ = questions[currentQuestion]
   const selectedAnswer = answers[currentQ?.id]
 
