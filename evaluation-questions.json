@@ -1,0 +1,337 @@
+{
+  "audit_questions": [
+    {
+      "id": 1,
+      "category": "Disaster Recovery",
+      "question": "A developer accidentally runs an UPDATE query in production that corrupts 80,000 customer records. How quickly can you restore the data?",
+      "options": [
+        {
+          "id": "a",
+          "text": "We can't restore it - the data is lost",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "We have daily backups, so we'd lose up to 24 hours of data",
+          "score": 25,
+          "risk_level": "high"
+        },
+        {
+          "id": "c",
+          "text": "We have point-in-time recovery - can restore to any moment in the last 7+ days",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Not sure what backup system we have",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "category": "High Availability",
+      "question": "Your main application server crashes at 2 PM on a Tuesday. What happens to your business?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Website goes down completely until we manually fix it (could be hours)",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "Website goes down for 5-10 minutes while our monitoring alerts us and we restart it",
+          "score": 50,
+          "risk_level": "medium"
+        },
+        {
+          "id": "c",
+          "text": "Traffic automatically shifts to backup servers within seconds - customers don't notice",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Don't know how our servers are configured",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "category": "Cost Management",
+      "question": "Your CEO asks 'How much did we spend on cloud infrastructure last month and what drove the costs?' How long does it take to answer?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Several days - we'd need to dig through bills and guess at usage patterns",
+          "score": 0,
+          "risk_level": "high"
+        },
+        {
+          "id": "b",
+          "text": "A few hours - we have basic billing reports we can review",
+          "score": 50,
+          "risk_level": "medium"
+        },
+        {
+          "id": "c",
+          "text": "Under 15 minutes - we have dashboards showing costs by service, team, and project",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "We don't really track this in detail",
+          "score": 0,
+          "risk_level": "high"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "category": "Security Monitoring",
+      "question": "Someone gains unauthorized access to your production database at 3 AM. When do you find out?",
+      "options": [
+        {
+          "id": "a",
+          "text": "We might never know unless data goes missing",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "We'd find out when we review logs manually (weekly/monthly)",
+          "score": 25,
+          "risk_level": "critical"
+        },
+        {
+          "id": "c",
+          "text": "We get alerted within minutes of suspicious access patterns",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Not sure what monitoring we have for this",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "category": "Deployment & Rollback",
+      "question": "You deploy a new feature at 4 PM. By 4:30 PM, customers are reporting errors. How do you fix it?",
+      "options": [
+        {
+          "id": "a",
+          "text": "We'd need to manually rewrite code and deploy again (could take hours)",
+          "score": 0,
+          "risk_level": "high",
+          "description": "Manual deployments are error-prone, lack version control, and cannot scale with team growth. This approach leads to inconsistent environments and makes rollbacks nearly impossible."
+        },
+        {
+          "id": "b",
+          "text": "We can manually revert to the previous version in 15-30 minutes",
+          "score": 50,
+          "risk_level": "medium"
+        },
+        {
+          "id": "c",
+          "text": "We can rollback to the previous version with one click in under 2 minutes",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Not sure how our deployment process works",
+          "score": 0,
+          "risk_level": "high"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "category": "Scalability",
+      "question": "Your product gets featured on a major news site and traffic increases 10x suddenly. What happens?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Website likely crashes or becomes very slow",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "Website slows down significantly, some customers can't access it",
+          "score": 25,
+          "risk_level": "high"
+        },
+        {
+          "id": "c",
+          "text": "Infrastructure automatically scales up to handle the load",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Haven't thought about this scenario",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "category": "Access Control",
+      "question": "A developer leaves your company today. How do you ensure they can't access your production systems tomorrow?",
+      "options": [
+        {
+          "id": "a",
+          "text": "We'd need to manually remember to change passwords/remove access (might take days)",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "We remove their access manually from each system (takes a few hours)",
+          "score": 50,
+          "risk_level": "high"
+        },
+        {
+          "id": "c",
+          "text": "Their access is automatically revoked across all systems immediately through central identity management",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "We don't have a formal process for this",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "category": "Compliance & Audit",
+      "question": "A customer asks 'Who accessed my personal data in the last 30 days?' Can you answer this?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No, we don't track this level of detail",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "Maybe - we'd need to manually search through various log files (could take days)",
+          "score": 25,
+          "risk_level": "high"
+        },
+        {
+          "id": "c",
+          "text": "Yes - we can pull an audit report showing exactly who accessed what and when",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Not sure if we log this information",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "category": "Resilience",
+      "question": "A critical third-party API you depend on goes down for 2 hours. What happens to your application?",
+      "options": [
+        {
+          "id": "a",
+          "text": "Our application completely breaks - customers can't use it",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "Some features break, customers see error messages",
+          "score": 50,
+          "risk_level": "medium"
+        },
+        {
+          "id": "c",
+          "text": "Application continues working with degraded functionality or cached data",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Haven't mapped our dependencies to know the impact",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "category": "Documentation & Knowledge",
+      "question": "Your lead DevOps engineer wins the lottery and quits immediately. Can someone else understand and manage your infrastructure?",
+      "options": [
+        {
+          "id": "a",
+          "text": "No - most knowledge is in their head, we'd be in serious trouble",
+          "score": 0,
+          "risk_level": "critical"
+        },
+        {
+          "id": "b",
+          "text": "We have some scattered documentation but would struggle significantly",
+          "score": 50,
+          "risk_level": "high"
+        },
+        {
+          "id": "c",
+          "text": "Yes - we have comprehensive, up-to-date infrastructure-as-code and documentation",
+          "score": 100,
+          "risk_level": "low"
+        },
+        {
+          "id": "d",
+          "text": "Our infrastructure setup isn't documented anywhere",
+          "score": 0,
+          "risk_level": "critical"
+        }
+      ]
+    }
+  ],
+  "scoring_guide": {
+    "excellent": {
+      "range": "80-100",
+      "description": "Solid foundation - optimize for efficiency",
+      "recommendation": "Focus on advanced optimization and innovation"
+    },
+    "good": {
+      "range": "60-79",
+      "description": "Decent setup with room for improvement",
+      "recommendation": "Address medium-risk areas and standardize practices"
+    },
+    "needs_improvement": {
+      "range": "40-59",
+      "description": "Significant gaps - prioritize improvements",
+      "recommendation": "Develop a 6-month improvement roadmap"
+    },
+    "critical": {
+      "range": "0-39",
+      "description": "Critical risk - immediate attention needed",
+      "recommendation": "Address critical vulnerabilities immediately"
+    }
+  }
+}
