@@ -66,7 +66,6 @@ export default function Quiz() {
   const [phase, setPhase] = useState<Phase>('quiz')
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
-  const [showShortcutsHelp, setShowShortcutsHelp] = useState(true)
   const [transitioning, setTransitioning] = useState(false)
   const [scores, setScores] = useState<Record<Category, number> | null>(null)
   const [email, setEmail] = useState('')
@@ -82,13 +81,6 @@ export default function Quiz() {
   const progress = (answeredCount / questions.length) * 100
   const currentQ = questions[currentQuestion]
   const selectedAnswer = answers[currentQ?.id]
-
-  // Hide shortcuts help after user interacts
-  useEffect(() => {
-    if (selectedAnswer) {
-      setShowShortcutsHelp(false)
-    }
-  }, [selectedAnswer])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -351,8 +343,9 @@ export default function Quiz() {
           {/* Left info section */}
           <div className="text-center lg:text-left space-y-6">
             <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
-              Your Infrastructure Evaluation
+            Evaluate Your Infrastructure in Just 2 Minutes 🚀
             </h1>
+            <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">Spend a few minutes to understand your current infrastructure and receive a personalized improvement report.  </p>
             {isSaving && (
               <p className="text-sm text-blue-600">Saving your results...</p>
             )}
@@ -360,6 +353,7 @@ export default function Quiz() {
               <p className="text-sm text-yellow-600">{saveError}</p>
             )}
             <TalkToUsButton />
+            <ClientLogos />
           </div>
 
           {/* Right - Results Card */}
@@ -368,25 +362,31 @@ export default function Quiz() {
             <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6 max-h-[80vh] overflow-y-auto">
               {/* Overall Score */}
               <Card className="shadow-2xl mb-6 border-2">
-                <CardHeader className="text-center pb-4">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-full mb-2">
-                    <Trophy className="w-6 h-6 text-yellow-600" />
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <CardTitle className="text-2xl font-bold text-gray-900">
+                      Overall Score: {overallPercentage}%
+                    </CardTitle>
+                    <div className={`flex items-center justify-center w-14 h-14 rounded-full ${getGradeBadgeColor(overallPercentage)} text-white text-xl font-bold`}>
+                    {getScoreGrade(overallPercentage)}
+                    </div>
                   </div>
-                  <CardTitle className="text-2xl mb-2">
-                    Overall Score: {overallPercentage}%
-                  </CardTitle>
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full ${getGradeBadgeColor(overallPercentage)} text-white text-2xl font-bold mb-2`}>
-                   {getScoreGrade(overallPercentage)}
+                  <div className="mb-4">
+                    <Progress value={overallPercentage} className={`h-3 ${getProgressBarColor(overallPercentage)}`} />
+                    <p className="text-sm text-gray-600 mt-2">
+                      {totalScore} out of {maxTotalScore} points
+                    </p>
                   </div>
-                  <CardDescription className="text-sm">
-                    {getOverallMessage(overallPercentage)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Progress value={overallPercentage} className={`h-3 ${getProgressBarColor(overallPercentage)}`} />
-                  <p className="text-center text-sm text-gray-600 mt-2">
-                    {totalScore} out of {maxTotalScore} points
-                  </p>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={downloadPDF}
+                    disabled={isDownloadingPDF}
+                    className="w-full flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
+                  >
+                    <Download className="w-4 h-4" />
+                    {isDownloadingPDF ? 'Generating...' : 'Download Report'}
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -421,46 +421,19 @@ export default function Quiz() {
                 })}
               </div>
 
-              {/* Action Buttons */}
-              <Card className="shadow-xl mb-6">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={downloadPDF}
-                      disabled={isDownloadingPDF}
-                      className="flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
-                    >
-                      <Download className="w-4 h-4" />
-                      {isDownloadingPDF ? 'Generating...' : 'Download Report'}
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={resetQuiz}
-                      className="flex items-center justify-center gap-2 transition-all hover:scale-105 hover:shadow-lg hover:bg-gray-100"
-                    >
-                      <Home className="w-4 h-4" />
-                      Take Quiz Again
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Next Steps */}
               <Card className="shadow-xl">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Next Steps</CardTitle>
                 </CardHeader>
                 <CardContent className="pb-4">
-                  <ul className="space-y-2 text-sm text-gray-700">
+                  <ul className="space-y-2 text-sm text-gray-700 mb-4">
                     {overallPercentage < 60 && (
                       <>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">1.</span>
                           <span>Improve security measures - SSL/HTTPS and authentication</span>
-                        </li> 
+                        </li>
                         <li className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">2.</span>
                           <span>Set up automated backups</span>
@@ -504,6 +477,16 @@ export default function Quiz() {
                       </>
                     )}
                   </ul>
+                  <div className="flex justify-center gap-4 mt-6">
+                    <button
+                      onClick={resetQuiz}
+                      className="relative inline-flex items-center px-6 py-4 font-semibold text-white transition-all duration-200 bg-black rounded-full overflow-hidden transform hover:scale-105 hover:bg-white hover:text-gray-900 border-black"
+                    >
+                      <span className="relative z-10">Take Quiz Again</span>
+                      <Home className="w-6 h-6 ml-8 -mr-2 relative z-10" />
+                    </button>
+                    <TalkToUsButton />
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -536,15 +519,13 @@ export default function Quiz() {
           <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-green-500 via-yellow-200 to-green-200 blur-xl animate-gradient opacity-90" />
           <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-4">
             {/* Keyboard Shortcuts Help */}
-            {showShortcutsHelp && (
-              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Keyboard className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-xs text-blue-800">
-                  <p className="font-semibold mb-0.5">Keyboard shortcuts enabled:</p>
-                  <p>Press <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">1-{currentQ.options.length}</kbd> to select • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Enter</kbd> to continue • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">←</kbd> to go back</p>
-                </div>
+            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2">
+              <Keyboard className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-blue-800">
+                <p className="font-semibold mb-0.5">Keyboard shortcuts enabled:</p>
+                <p>Press <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">1-{currentQ.options.length}</kbd> to select • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Enter</kbd> to continue • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">←</kbd> to go back</p>
               </div>
-            )}
+            </div>
 
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">

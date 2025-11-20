@@ -13,6 +13,10 @@ export default function ClientLogos() {
         <Image src="/taxnodes.png" alt="taxnodes" width={98} height={28} className="h-5 w-auto" />
         <Image src="/politexts.jpg" alt="politexts" width={98} height={28} className="h-5 w-auto" />
         <Image src="/merchantspring_logo.jpeg" alt="merchantsprings" width={68} height={28} className="h-12 w-auto" />
+        <Image src="/backsie.png" alt="backsie" width={68} height={28} className="h-6 w-auto" />
+        <Image src="/svaksha.png" alt="svaksha" width={68} height={28} className="h-6 w-auto" />
+        <Image src="/hashconnect.jpeg" alt="hashconnect" width={68} height={28} className="h-12 w-auto" />
+        <Image src="/labfinder.png" alt="labfinder" width={68} height={28} className="h-5 w-auto" />
       </div>
     </div>
   )
