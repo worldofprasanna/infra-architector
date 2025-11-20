@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateAuditPDF, type PDFGenerationData } from '@/lib/pdfGenerator'
-import { type Category } from '@/data/questions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,11 +24,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate scores structure
-    const requiredCategories: Category[] = ['infrastructure', 'tech_stack', 'security', 'scalability']
-    const hasAllCategories = requiredCategories.every(cat => typeof scores[cat] === 'number')
-
-    if (!hasAllCategories) {
+    // Validate scores structure - at least check that scores is an object with numeric values
+    if (typeof scores !== 'object' || Object.values(scores).some(v => typeof v !== 'number')) {
       return NextResponse.json(
         { error: 'Invalid scores structure' },
         { status: 400 }

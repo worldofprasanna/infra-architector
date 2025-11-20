@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { questions, type Category, categoryNames, maxScorePerCategory, maxTotalScore } from '@/data/questions'
+import { questions, type Category, categoryNames, maxScorePerCategory, maxTotalScore, getScoreRangeInfo } from '@/data/questions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -15,11 +15,19 @@ import ClientLogos from './ClientLogos'
 
 type Phase = 'quiz' | 'email' | 'results'
 
-const categoryIcons: Record<Category, React.ReactNode> = {
-  infrastructure: <Server className="w-5 h-5" />,
-  tech_stack: <Layers className="w-5 h-5" />,
-  security: <Shield className="w-5 h-5" />,
-  scalability: <TrendingUp className="w-5 h-5" />
+const getCategoryIcon = (category: string): React.ReactNode => {
+  const categoryLower = category.toLowerCase()
+  if (categoryLower.includes('disaster') || categoryLower.includes('recovery')) return <Server className="w-5 h-5" />
+  if (categoryLower.includes('availability')) return <Server className="w-5 h-5" />
+  if (categoryLower.includes('cost')) return <TrendingUp className="w-5 h-5" />
+  if (categoryLower.includes('security') || categoryLower.includes('monitoring')) return <Shield className="w-5 h-5" />
+  if (categoryLower.includes('deployment') || categoryLower.includes('rollback')) return <Layers className="w-5 h-5" />
+  if (categoryLower.includes('scalability')) return <TrendingUp className="w-5 h-5" />
+  if (categoryLower.includes('access') || categoryLower.includes('control')) return <Shield className="w-5 h-5" />
+  if (categoryLower.includes('compliance') || categoryLower.includes('audit')) return <Shield className="w-5 h-5" />
+  if (categoryLower.includes('resilience') || categoryLower.includes('dependencies')) return <Layers className="w-5 h-5" />
+  if (categoryLower.includes('documentation') || categoryLower.includes('knowledge')) return <Layers className="w-5 h-5" />
+  return <Server className="w-5 h-5" />
 }
 
 const getScoreColor = (percentage: number) => {
@@ -62,6 +70,16 @@ const getOverallMessage = (percentage: number) => {
   return "Significant improvements needed. Focus on core infrastructure, security, and scalability."
 }
 
+// Shuffle function using Fisher-Yates algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export default function Quiz() {
   const [phase, setPhase] = useState<Phase>('quiz')
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -76,10 +94,18 @@ export default function Quiz() {
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false)
   const hasSaved = useRef(false)
 
+  // Shuffle options once when component mounts
+  const [shuffledQuestions] = useState(() =>
+    questions.map(q => ({
+      ...q,
+      options: shuffleArray(q.options)
+    }))
+  )
+
   // Calculate progress based on answered questions, not current question
   const answeredCount = Object.keys(answers).length
-  const progress = (answeredCount / questions.length) * 100
-  const currentQ = questions[currentQuestion]
+  const progress = (answeredCount / shuffledQuestions.length) * 100
+  const currentQ = shuffledQuestions[currentQuestion]
   const selectedAnswer = answers[currentQ?.id]
 
   useEffect(() => {
@@ -104,7 +130,7 @@ export default function Quiz() {
   }, [currentQuestion, currentQ])
 
   const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
+    if (currentQuestion < shuffledQuestions.length - 1) {
       setTransitioning(true)
       setTimeout(() => {
         setCurrentQuestion(currentQuestion + 1)
@@ -112,18 +138,16 @@ export default function Quiz() {
       }, 150)
     } else {
       // Calculate scores
-      const calculatedScores: Record<Category, number> = {
-        infrastructure: 0,
-        tech_stack: 0,
-        security: 0,
-        scalability: 0
-      }
+      const calculatedScores: Record<Category, number> = {}
 
       Object.entries(answers).forEach(([questionId, optionId]) => {
-        const question = questions.find(q => q.id === parseInt(questionId))
+        const question = shuffledQuestions.find(q => q.id === parseInt(questionId))
         const option = question?.options.find(opt => opt.id === optionId)
         if (option && question) {
-          calculatedScores[question.category] += option.points
+          if (!calculatedScores[question.category]) {
+            calculatedScores[question.category] = 0
+          }
+          calculatedScores[question.category] += option.score
         }
       })
 
@@ -184,12 +208,16 @@ export default function Quiz() {
     try {
       const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0)
 
-      const evaluation: EvaluationResult = {
+      // Create a flattened object with all category scores
+      const categoryScores: Record<string, number> = {}
+      Object.entries(scores).forEach(([category, score]) => {
+        const key = category.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and')
+        categoryScores[`${key}_score`] = score
+      })
+
+      const evaluation: any = {
         email,
-        infrastructure_score: scores.infrastructure,
-        tech_stack_score: scores.tech_stack,
-        security_score: scores.security,
-        scalability_score: scores.scalability,
+        ...categoryScores,
         total_score: totalScore
       }
 
@@ -404,7 +432,7 @@ export default function Quiz() {
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
                           <CardTitle className="flex items-center gap-2 text-sm">
-                            {categoryIcons[category]}
+                            {getCategoryIcon(category)}
                             <span className="hidden sm:inline">{categoryNames[category]}</span>
                           </CardTitle>
                           <span className="text-lg font-bold">{percentage}%</span>
@@ -421,74 +449,17 @@ export default function Quiz() {
                 })}
               </div>
 
-              {/* Next Steps */}
-              <Card className="shadow-xl">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Next Steps</CardTitle>
-                </CardHeader>
-                <CardContent className="pb-4">
-                  <ul className="space-y-2 text-sm text-gray-700 mb-4">
-                    {overallPercentage < 60 && (
-                      <>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">1.</span>
-                          <span>Improve security measures - SSL/HTTPS and authentication</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">2.</span>
-                          <span>Set up automated backups</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">3.</span>
-                          <span>Consider managed cloud platform</span>
-                        </li>
-                      </>
-                    )}
-                    {overallPercentage >= 60 && overallPercentage < 80 && (
-                      <>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">1.</span>
-                          <span>Implement CI/CD pipelines</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">2.</span>
-                          <span>Add monitoring and alerting</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">3.</span>
-                          <span>Plan for horizontal scaling</span>
-                        </li>
-                      </>
-                    )}
-                    {overallPercentage >= 80 && (
-                      <>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">1.</span>
-                          <span>Monitor and optimize performance</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">2.</span>
-                          <span>Document your architecture</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-blue-600 font-bold">3.</span>
-                          <span>Consider chaos engineering</span>
-                        </li>
-                      </>
-                    )}
-                  </ul>
-                  <div className="flex justify-center gap-4 mt-6">
-                    <button
-                      onClick={resetQuiz}
-                      className="relative inline-flex items-center px-6 py-4 font-semibold text-white transition-all duration-200 bg-black rounded-full overflow-hidden transform hover:scale-105 hover:bg-white hover:text-gray-900 border-black"
-                    >
-                      <span className="relative z-10">Take Quiz Again</span>
-                      <Home className="w-6 h-6 ml-8 -mr-2 relative z-10" />
-                    </button>
-                    <TalkToUsButton />
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Action Buttons */}
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={resetQuiz}
+                  className="relative inline-flex items-center px-6 py-4 font-semibold text-white transition-all duration-200 bg-black rounded-full overflow-hidden transform hover:scale-105 hover:bg-white hover:text-gray-900 border-2 border-black"
+                >
+                  <span className="relative z-10">Take Quiz Again</span>
+                  <Home className="w-6 h-6 ml-8 -mr-2 relative z-10" />
+                </button>
+                <TalkToUsButton />
+              </div>
             </div>
           </div>
         </div>
@@ -529,7 +500,7 @@ export default function Quiz() {
 
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Question {currentQuestion + 1} of {questions.length}</span>
+                <span>Question {currentQuestion + 1} of {shuffledQuestions.length}</span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
               <Progress value={progress} className="h-2" />
@@ -593,8 +564,8 @@ export default function Quiz() {
                     disabled={!selectedAnswer}
                     className="group transition-all hover:scale-105 hover:shadow-md"
                   >
-                    {currentQuestion === questions.length - 1 ? 'Continue' : 'Next'}
-                    {currentQuestion !== questions.length - 1 && (
+                    {currentQuestion === shuffledQuestions.length - 1 ? 'Continue' : 'Next'}
+                    {currentQuestion !== shuffledQuestions.length - 1 && (
                       <>
                         <ChevronRight className="w-4 h-4 ml-2" />
                         <span className="ml-1 text-xs opacity-70">↵</span>

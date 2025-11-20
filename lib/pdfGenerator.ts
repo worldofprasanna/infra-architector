@@ -1,9 +1,9 @@
 import jsPDF from 'jspdf'
-import { questions, categoryNames, maxScorePerCategory, maxTotalScore, type Category } from '@/data/questions'
+import { questions, categoryNames, maxScorePerCategory, maxTotalScore, scoringFramework, type Category } from '@/data/questions'
 
 export interface PDFGenerationData {
   email: string
-  scores: Record<Category, number>
+  scores: Record<string, number>
   answers: Record<number, string>
 }
 
@@ -18,27 +18,27 @@ const getScoreGrade = (percentage: number): string => {
 
 const getScoreColor = (percentage: number): [number, number, number] => {
   if (percentage >= 80) return [34, 197, 94] // green
-  if (percentage >= 60) return [234, 179, 8] // yellow
+  if (percentage >= 50) return [234, 179, 8] // yellow
   return [239, 68, 68] // red
 }
 
-const getPointsColor = (points: number): [number, number, number] => {
-  if (points === 10) return [220, 252, 231] // light green background
-  if (points === 7) return [254, 249, 195] // light yellow background
-  return [254, 226, 226] // light red background (for 5 and 3 points)
+const getPointsColor = (score: number): [number, number, number] => {
+  if (score === 100) return [220, 252, 231] // light green background
+  if (score >= 50) return [254, 249, 195] // light yellow background
+  return [254, 226, 226] // light red background (for low scores)
 }
 
-const getPointsTextColor = (points: number): [number, number, number] => {
-  if (points === 10) return [21, 128, 61] // dark green text
-  if (points === 7) return [161, 98, 7] // dark yellow text
-  return [185, 28, 28] // dark red text (for 5 and 3 points)
+const getPointsTextColor = (score: number): [number, number, number] => {
+  if (score === 100) return [21, 128, 61] // dark green text
+  if (score >= 50) return [161, 98, 7] // dark yellow text
+  return [185, 28, 28] // dark red text (for low scores)
 }
 
-const getOverallMessage = (percentage: number): string => {
-  if (percentage >= 80) return "Excellent! Your infrastructure is well-architected and production-ready."
-  if (percentage >= 60) return "Good foundation! There are some areas for improvement to reach excellence."
-  if (percentage >= 40) return "Moderate setup. Consider upgrading key areas to improve reliability and scalability."
-  return "Significant improvements needed. Focus on core infrastructure, security, and scalability."
+const getOverallMessage = (totalScore: number): string => {
+  const scoreRange = scoringFramework.score_ranges.find(
+    range => totalScore >= range.min && totalScore <= range.max
+  )
+  return scoreRange?.description || "Infrastructure evaluation completed."
 }
 
 export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
@@ -131,7 +131,7 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
   doc.setTextColor(0, 0, 0)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  const messageLines = wrapText(getOverallMessage(overallPercentage), pageWidth - margin * 2 - 70)
+  const messageLines = wrapText(getOverallMessage(totalScore), pageWidth - margin * 2 - 70)
   messageLines.forEach((line, index) => {
     doc.text(line, margin + 70, yPosition + 8 + (index * 5))
   })
@@ -145,10 +145,10 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
   doc.text('Category Breakdown', margin, yPosition)
   yPosition += 10
 
-  const categories: Category[] = ['infrastructure', 'tech_stack', 'security', 'scalability']
+  const categories = Object.keys(data.scores)
   categories.forEach(category => {
-    const score = data.scores[category]
-    const categoryMax = maxScorePerCategory[category]
+    const score = data.scores[category] || 0
+    const categoryMax = maxScorePerCategory[category] || 100
     const percentage = Math.round((score / categoryMax) * 100)
     const color = getScoreColor(percentage)
 
@@ -158,7 +158,7 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
-    doc.text(categoryNames[category], margin, yPosition)
+    doc.text(categoryNames[category] || category, margin, yPosition)
 
     // Score
     doc.setFontSize(10)
@@ -186,10 +186,11 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
   yPosition += 12
 
   // Find areas with low scores (potential gaps)
-  const gaps: { category: Category; percentage: number }[] = []
+  const gaps: { category: string; percentage: number }[] = []
   categories.forEach(category => {
-    const categoryMax = maxScorePerCategory[category]
-    const percentage = Math.round((data.scores[category] / categoryMax) * 100)
+    const score = data.scores[category] || 0
+    const categoryMax = maxScorePerCategory[category] || 100
+    const percentage = Math.round((score / categoryMax) * 100)
     if (percentage < 70) {
       gaps.push({ category, percentage })
     }
@@ -206,7 +207,7 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
       doc.setFontSize(10)
       doc.setTextColor(185, 28, 28)
       doc.setFont('helvetica', 'bold')
-      doc.text(`${index + 1}. ${categoryNames[gap.category]} (${gap.percentage}%)`, margin + 5, yPosition)
+      doc.text(`${index + 1}. ${categoryNames[gap.category] || gap.category} (${gap.percentage}%)`, margin + 5, yPosition)
       yPosition += 5
 
       doc.setTextColor(0, 0, 0)
@@ -232,27 +233,54 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
 
   yPosition += 10
 
-  // General recommendations
-  checkNewPage(40)
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Next Steps:', margin, yPosition)
-  yPosition += 8
+  // Score range category and recommendations
+  const scoreRangeInfo = scoringFramework.score_ranges.find(
+    range => totalScore >= range.min && totalScore <= range.max
+  )
 
-  const nextSteps = getNextSteps(overallPercentage)
-  nextSteps.forEach((step, index) => {
-    checkNewPage(12)
-    doc.setFontSize(10)
+  if (scoreRangeInfo) {
+    checkNewPage(50)
+
+    // Category and description
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(0, 0, 0)
+    doc.text(`Assessment: ${scoreRangeInfo.category}`, margin, yPosition)
+    yPosition += 8
+
+    // Description
+    doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    const stepLines = wrapText(`${index + 1}. ${step}`, pageWidth - margin * 2 - 5)
-    stepLines.forEach(line => {
+    doc.setTextColor(60, 60, 60)
+    const descLines = wrapText(scoreRangeInfo.description, pageWidth - margin * 2)
+    descLines.forEach(line => {
       checkNewPage()
-      doc.text(line, margin + 5, yPosition)
+      doc.text(line, margin, yPosition)
       yPosition += 5
     })
-    yPosition += 3
-  })
+    yPosition += 8
+
+    // Recommendations heading
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    doc.text('Recommended Actions:', margin, yPosition)
+    yPosition += 8
+
+    scoreRangeInfo.recommendations.forEach((recommendation, index) => {
+      checkNewPage(12)
+      doc.setFontSize(10)
+      doc.setTextColor(0, 0, 0)
+      doc.setFont('helvetica', 'normal')
+      const recLines = wrapText(`${index + 1}. ${recommendation}`, pageWidth - margin * 2 - 5)
+      recLines.forEach(line => {
+        checkNewPage()
+        doc.text(line, margin + 5, yPosition)
+        yPosition += 5
+      })
+      yPosition += 3
+    })
+  }
 
   // Detailed Analysis Section (moved to the end)
   doc.addPage()
@@ -270,33 +298,43 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
 
     if (!selectedOption) return
 
-    checkNewPage(50)
+    checkNewPage(60)
 
-    // Background color based on points scored
-    const bgColor = getPointsColor(selectedOption.points)
-    const textColor = getPointsTextColor(selectedOption.points)
+    // Background color based on score
+    const bgColor = getPointsColor(selectedOption.score)
+    const textColor = getPointsTextColor(selectedOption.score)
 
-    // Draw background for the entire question block
-    doc.setFillColor(...bgColor)
-    doc.rect(margin - 2, yPosition - 5, pageWidth - margin * 2 + 4, 10, 'F')
-
-    // Question with category badge inline
+    // Question text with wrapping
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...textColor)
     const questionText = `${index + 1}. ${question.question}`
-    doc.text(questionText, margin, yPosition)
+    const questionLines = wrapText(questionText, pageWidth - margin * 2 - 40) // Leave space for badge
 
-    // Category badge right next to question on the same line
-    const questionWidth = doc.getTextWidth(questionText)
+    // Calculate background height based on wrapped lines
+    const bgHeight = questionLines.length * 5 + 5
+
+    // Draw background for the question
+    doc.setFillColor(...bgColor)
+    doc.rect(margin - 2, yPosition - 5, pageWidth - margin * 2 + 4, bgHeight, 'F')
+
+    // Render wrapped question text
+    questionLines.forEach((line, lineIndex) => {
+      doc.setTextColor(...textColor)
+      doc.text(line, margin, yPosition + (lineIndex * 5))
+    })
+
+    // Category badge on the right side
+    const badgeYPosition = yPosition - 3
     doc.setFillColor(219, 234, 254)
     doc.setTextColor(30, 64, 175)
     doc.setFontSize(8)
-    const badgeWidth = doc.getTextWidth(categoryNames[question.category]) + 4
-    doc.roundedRect(margin + questionWidth + 3, yPosition - 3, badgeWidth, 5, 1, 1, 'F')
-    doc.text(categoryNames[question.category], margin + questionWidth + 5, yPosition + 0.5)
+    const categoryName = categoryNames[question.category] || question.category
+    const badgeWidth = doc.getTextWidth(categoryName) + 4
+    doc.roundedRect(pageWidth - margin - badgeWidth - 2, badgeYPosition, badgeWidth, 5, 1, 1, 'F')
+    doc.text(categoryName, pageWidth - margin - badgeWidth, badgeYPosition + 3.5)
 
-    yPosition += 8
+    yPosition += bgHeight + 3
 
     // Selected answer
     doc.setFontSize(10)
@@ -306,14 +344,14 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
     yPosition += 5
 
     doc.setFont('helvetica', 'normal')
-    doc.text(`${selectedOption.text} (${selectedOption.points} points)`, margin + 5, yPosition)
+    doc.text(`${selectedOption.text} (${selectedOption.score} points)`, margin + 5, yPosition)
     yPosition += 7
 
-    // Description
+    // Analysis
     doc.setTextColor(60, 60, 60)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(9)
-    const descLines = wrapText(selectedOption.description, pageWidth - margin * 2 - 10)
+    const descLines = wrapText(selectedOption.analysis, pageWidth - margin * 2 - 10)
     descLines.forEach(line => {
       checkNewPage()
       doc.text(line, margin + 5, yPosition)
@@ -334,54 +372,28 @@ export const generateAuditPDF = (data: PDFGenerationData): jsPDF => {
   return doc
 }
 
-const getRecommendationForCategory = (category: Category, percentage: number): string => {
-  const recommendations: Record<Category, Record<string, string>> = {
-    infrastructure: {
-      low: 'Consider migrating to a managed cloud platform for better reliability and scalability. Implement automated deployments and comprehensive monitoring to reduce operational overhead and improve system visibility.',
-      medium: 'Enhance your infrastructure with container orchestration and implement full observability. Consider adding redundancy and automated scaling to handle traffic variations effectively.'
-    },
-    tech_stack: {
-      low: 'Upgrade to modern frameworks and managed database services. Implement proper data backup strategies and consider using SSR/SSG frameworks for better performance and SEO.',
-      medium: 'Optimize your current stack with code splitting and caching strategies. Consider moving to distributed databases for better scalability and reliability.'
-    },
-    security: {
-      low: 'Immediately implement SSL/HTTPS and upgrade authentication mechanisms. Establish automated backup procedures and develop a disaster recovery plan to protect against data loss.',
-      medium: 'Enhance security with OAuth/SSO implementation and add multi-factor authentication. Consider working towards compliance certifications and implement regular security audits.'
-    },
-    scalability: {
-      low: 'Design an API architecture to enable better scaling. Implement horizontal scaling with load balancing to handle increased traffic without service degradation.',
-      medium: 'Move towards microservices architecture and implement auto-scaling. Consider adding message queues for asynchronous processing and better resource utilization.'
-    }
+const getRecommendationForCategory = (category: string, percentage: number): string => {
+  // Use scoring framework recommendations if available
+  const scoreRange = scoringFramework.score_ranges.find(range => {
+    // This is simplified - in reality we'd need the actual score, not percentage
+    return percentage >= 0 // placeholder logic
+  })
+
+  // Default recommendations based on category
+  const defaultRecommendations: Record<string, string> = {
+    'Disaster Recovery': 'Implement robust backup and recovery procedures. Consider point-in-time recovery and regular disaster recovery testing.',
+    'High Availability': 'Set up redundant systems with automatic failover. Implement load balancing and health checks for zero-downtime operations.',
+    'Cost Management': 'Implement cost tracking with resource tagging. Use dashboards for real-time cost visibility and optimization opportunities.',
+    'Security Monitoring': 'Deploy automated security monitoring with real-time alerts. Implement comprehensive logging and access tracking.',
+    'Deployment & Rollback': 'Establish automated CI/CD pipelines with one-click rollback capabilities. Implement blue-green or canary deployments.',
+    'Scalability': 'Design for auto-scaling infrastructure. Implement horizontal scaling with appropriate load distribution.',
+    'Access Control': 'Implement centralized identity management with SSO. Automate access provisioning and deprovisioning.',
+    'Compliance & Audit': 'Set up centralized audit logging. Implement automated compliance reporting and data access tracking.',
+    'Resilience & Dependencies': 'Implement circuit breakers and graceful degradation. Use caching and fallback mechanisms for third-party dependencies.',
+    'Documentation & Knowledge Management': 'Maintain infrastructure-as-code for all resources. Keep comprehensive documentation and runbooks updated.'
   }
 
-  const level = percentage < 40 ? 'low' : 'medium'
-  return recommendations[category][level]
+  return defaultRecommendations[category] || 'Review and improve current practices in this area. Consider consulting with infrastructure experts for specific recommendations.'
 }
 
-const getNextSteps = (percentage: number): string[] => {
-  if (percentage >= 80) {
-    return [
-      'Continue monitoring and optimizing performance metrics',
-      'Document your architecture for team knowledge sharing',
-      'Consider advanced features like chaos engineering and A/B testing',
-      'Stay updated with latest security practices and infrastructure trends'
-    ]
-  }
-
-  if (percentage >= 60) {
-    return [
-      'Implement CI/CD pipelines for automated deployments',
-      'Add comprehensive monitoring and alerting systems',
-      'Plan for horizontal scaling and load balancing',
-      'Conduct regular security audits and penetration testing'
-    ]
-  }
-
-  return [
-    'Focus on improving security measures - implement SSL/HTTPS and better authentication',
-    'Set up automated backups and disaster recovery procedures',
-    'Consider migrating to a managed cloud platform for better reliability',
-    'Implement basic monitoring and alerting to detect issues proactively',
-    'Plan a roadmap for infrastructure modernization'
-  ]
-}
+// Removed getNextSteps - now using scoring framework recommendations
