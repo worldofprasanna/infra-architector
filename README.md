@@ -1,12 +1,12 @@
 # Infrastructure Evaluation App
 
-A Next.js application that evaluates a company's infrastructure maturity through a 10-question quiz. Built with Next.js, TypeScript, Tailwind CSS, shadcn/ui, and Supabase.
+A Next.js application that evaluates a company's infrastructure maturity through a 10-question quiz. Built with Next.js, TypeScript, Tailwind CSS, shadcn/ui, and PostgreSQL.
 
 ## Features
 
 - 🎯 **10-Question Quiz**: Comprehensive evaluation across 4 categories
 - 📊 **Category Scoring**: Infrastructure, Tech Stack, Security, and Scalability
-- 💾 **Data Persistence**: Stores results in Supabase
+- 💾 **Data Persistence**: Stores results in PostgreSQL database
 - 🎨 **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 - 📧 **Email Collection**: Captures business email before showing results
 - 📈 **Detailed Results**: Visual breakdown of scores with recommendations
@@ -16,7 +16,7 @@ A Next.js application that evaluates a company's infrastructure maturity through
 ### Prerequisites
 
 - Node.js 18+ installed
-- A Supabase account (free tier works fine)
+- PostgreSQL database (local or hosted)
 
 ### Installation
 
@@ -25,19 +25,22 @@ A Next.js application that evaluates a company's infrastructure maturity through
    npm install
    ```
 
-2. **Set up Supabase:**
+2. **Set up PostgreSQL database:**
 
-   Follow the instructions in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) to:
-   - Create a Supabase project
-   - Set up the database table
-   - Get your API credentials
+   Create the database schema by running the SQL script:
+   ```bash
+   psql -U your_username -d your_database -f db-schema.sql
+   ```
 
 3. **Configure environment variables:**
 
-   Update `.env.local` with your Supabase credentials:
+   Update `.env.local` with your PostgreSQL credentials:
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url-here
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
+   DB_HOST=your-database-host
+   DB_PORT=5432
+   DB_NAME=your-database-name
+   DB_USER=your-username
+   DB_PASSWORD=your-password
    ```
 
 4. **Run the development server:**
@@ -65,9 +68,9 @@ A Next.js application that evaluates a company's infrastructure maturity through
 ├── data/
 │   └── questions.ts          # Quiz questions and categories
 ├── lib/
-│   ├── supabase.ts           # Supabase client setup
+│   ├── db.ts                 # PostgreSQL database connection
 │   └── utils.ts              # Utility functions
-└── SUPABASE_SETUP.md         # Supabase setup instructions
+└── db-schema.sql             # Database schema
 ```
 
 ## Quiz Categories
@@ -139,7 +142,7 @@ The app can be deployed to any platform that supports Next.js:
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui
-- **Database**: Supabase (PostgreSQL)
+- **Database**: PostgreSQL
 - **Icons**: Lucide React
 
 ## Database Schema
@@ -170,7 +173,7 @@ MIT License - feel free to use this project for your own purposes.
 ## Support
 
 For issues or questions:
-1. Check the Supabase setup instructions
+1. Check the database schema setup
 2. Ensure environment variables are correctly set
 3. Check browser console for errors
-4. Verify Supabase table exists and has correct schema
+4. Verify PostgreSQL database connection and table schema

@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { ChevronRight, ChevronLeft, Keyboard, Mail, Trophy, TrendingUp, Shield, Server, Layers, Home, Download } from 'lucide-react'
-import { supabase, type EvaluationResult } from '@/lib/supabase'
+import { type EvaluationResult } from '@/lib/db'
 import TalkToUsButton from './TalkToUsButton'
 import ClientLogos from './ClientLogos'
 
@@ -191,46 +191,39 @@ export default function Quiz() {
 
     setIsSubmitting(true)
 
-    // Save to Supabase
+    // Save to database
     if (scores && !hasSaved.current) {
       hasSaved.current = true
-      await saveToSupabase(email, scores)
+      await saveEvaluation(email, scores)
     }
 
     setIsSubmitting(false)
     setPhase('results')
   }
 
-  const saveToSupabase = async (email: string, scores: Record<Category, number>) => {
+  const saveEvaluation = async (email: string, scores: Record<Category, number>) => {
     setIsSaving(true)
     setSaveError(null)
 
     try {
-      const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0)
-
-      // Create a flattened object with all category scores
-      const categoryScores: Record<string, number> = {}
-      Object.entries(scores).forEach(([category, score]) => {
-        const key = category.toLowerCase().replace(/\s+/g, '_').replace(/&/g, 'and')
-        categoryScores[`${key}_score`] = score
+      const response = await fetch('/api/save-evaluation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          scores
+        }),
       })
 
-      const evaluation: any = {
-        email,
-        ...categoryScores,
-        total_score: totalScore
-      }
-
-      const { error } = await supabase
-        .from('evaluations')
-        .insert([evaluation])
-
-      if (error) {
-        console.error('Supabase error:', error)
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API error:', errorData)
         setSaveError('Failed to save results. But you can still view them below.')
       }
     } catch (error) {
-      console.error('Error saving to Supabase:', error)
+      console.error('Error saving evaluation:', error)
       setSaveError('Failed to save results. But you can still view them below.')
     } finally {
       setIsSaving(false)
