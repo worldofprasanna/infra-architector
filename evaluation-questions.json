@@ -2,409 +2,176 @@
   "audit_questions": [
     {
       "id": 1,
-      "category": "Disaster Recovery",
-      "question": "A developer accidentally runs an UPDATE query in production that corrupts 80,000 customer records. How quickly can you restore the data?",
+      "category": "Project Maturity",
+      "question": "Do you already have an application in production or are you building from scratch?",
       "options": [
         {
           "id": "a",
-          "text": "We can't restore it - the data is lost",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Critical gap: Without any backup mechanism, data loss is permanent. This exposes the business to catastrophic risk - losing customer data can result in loss of trust, legal liability, and potentially business closure. Every production database must have a backup strategy."
+          "text": "Building from scratch - haven't deployed anything yet"
         },
         {
           "id": "b",
-          "text": "We have daily backups, so we'd lose up to 24 hours of data",
-          "score": 25,
-          "risk_level": "medium",
-          "analysis": "Basic protection exists but with significant limitations. Losing 24 hours of data means all transactions, updates, and customer actions in that period are gone. For an e-commerce site, this could mean lost orders. For a SaaS product, lost work. Daily backups are better than nothing but insufficient for most modern applications."
-        },
-        {
-          "id": "c",
-          "text": "We have point-in-time recovery - can restore to any moment in the last 7+ days",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Point-in-time recovery allows restoration to the exact moment before the corruption occurred, minimizing data loss to seconds or minutes. This is the industry best practice for production databases."
-        },
-        {
-          "id": "d",
-          "text": "Not sure what backup system we have",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Lack of awareness is as dangerous as lack of backups. If the team doesn't know what disaster recovery capabilities exist, they can't respond effectively during an actual incident. This indicates poor documentation and knowledge management."
+          "text": "In production with basic setup - needs improvement",
+          "preference": "AWS_EVENT_DRIVEN"
         }
       ]
     },
     {
       "id": 2,
-      "category": "High Availability",
-      "question": "Your main application server crashes at 2 PM on a Tuesday. What happens to your business?",
+      "category": "Capacity Planning",
+      "question": "How many users are you expecting in the next 3-6 months?",
       "options": [
         {
           "id": "a",
-          "text": "Website goes down completely until we manually fix it (could be hours)",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Single point of failure with manual recovery. Hours of downtime means lost revenue, damaged reputation, and frustrated customers. During business hours, every minute of downtime is costly. This setup is unacceptable for any business that depends on online availability."
+          "text": "< 1,000 users"
         },
         {
           "id": "b",
-          "text": "Website goes down for 5-10 minutes while our monitoring alerts us and we restart it",
-          "score": 50,
-          "risk_level": "medium",
-          "analysis": "Better than option A but still results in customer-facing downtime. While monitoring and quick manual response help, 5-10 minutes is still significant. Customers may leave, transactions fail, and trust erodes. Modern infrastructure should auto-recover without human intervention."
+          "text": "1,000 - 10,000 users"
         },
         {
           "id": "c",
-          "text": "Traffic automatically shifts to backup servers within seconds - customers don't notice",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Auto-scaling and redundancy ensure zero or near-zero customer impact. This setup uses load balancers, health checks, and multiple server instances to maintain availability. This is essential for business continuity."
-        },
-        {
-          "id": "d",
-          "text": "Don't know how our servers are configured",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Dangerous knowledge gap. Not understanding your infrastructure architecture means you can't predict or prevent failures, can't optimize costs, and can't make informed decisions. This suggests undocumented infrastructure and potential single points of failure."
+          "text": ">10,000 users"
         }
       ]
     },
     {
       "id": 3,
-      "category": "Cost Management",
-      "question": "Your CEO asks 'How much did we spend on cloud infrastructure last month and what drove the costs?' How long does it take to answer?",
+      "category": "Compliance & Regulations",
+      "question": "Do you need to comply with regulations like HIPAA, PCI DSS, SOC 2, or GDPR?",
       "options": [
         {
           "id": "a",
-          "text": "Several days - we'd need to dig through bills and guess at usage patterns",
-          "score": 0,
-          "risk_level": "high",
-          "analysis": "Poor cost visibility leads to waste and uncontrolled spending. Without proper tagging and monitoring, you're likely overspending by 30-50%. You can't optimize what you can't measure. This often means zombie resources, oversized instances, and missed savings opportunities."
+          "text": "Yes, we handle healthcare data (HIPAA) or payment data (PCI DSS)"
         },
         {
           "id": "b",
-          "text": "A few hours - we have basic billing reports we can review",
-          "score": 50,
-          "risk_level": "medium",
-          "analysis": "Basic visibility exists but lacks depth. You can see total spending but can't quickly identify which teams, projects, or services drive costs. This makes it difficult to attribute costs, set budgets per team, or identify optimization opportunities without manual analysis."
+          "text": "Yes, we need SOC 2 or ISO 27001 for enterprise customers"
         },
         {
           "id": "c",
-          "text": "Under 15 minutes - we have dashboards showing costs by service, team, and project",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Real-time cost visibility with proper resource tagging enables data-driven decisions. You can quickly identify cost spikes, attribute spending to business units, and optimize based on actual usage patterns. This typically saves 20-40% on cloud bills."
+          "text": "Only GDPR/privacy regulations (data protection)"
         },
         {
           "id": "d",
-          "text": "We don't really track this in detail",
-          "score": 0,
-          "risk_level": "high",
-          "analysis": "Untracked spending is uncontrolled spending. Cloud costs can spiral quickly without monitoring - a misconfigured resource can cost thousands per month. Lack of cost awareness means you're likely wasting significant money on unused resources, wrong instance sizes, or inefficient architectures."
+          "text": "No compliance requirements currently"
         }
       ]
     },
     {
       "id": 4,
-      "category": "Security Monitoring",
-      "question": "Someone gains unauthorized access to your production database at 3 AM. When do you find out?",
+      "category": "Architecture Patterns",
+      "question": "Do you have background jobs running (email sending, data processing, scheduled tasks)?",
       "options": [
         {
           "id": "a",
-          "text": "We might never know unless data goes missing",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Critical security vulnerability. Without access logging and monitoring, attackers can steal data, plant backdoors, or cause damage without detection. By the time you notice (if ever), massive damage may be done. This violates most compliance frameworks and puts customer data at severe risk."
+          "text": "Yes, critical to core functionality (payment processing, data pipelines)"
         },
         {
           "id": "b",
-          "text": "We'd find out when we review logs manually (weekly/monthly)",
-          "score": 25,
-          "risk_level": "high",
-          "analysis": "Logging exists but detection is dangerously slow. Finding out about a breach days or weeks later means attackers have ample time to exfiltrate data, cover tracks, and cause maximum damage. The average cost of a data breach increases significantly with delayed detection."
+          "text": "Yes, for non-critical tasks (emails, notifications, analytics)"
         },
         {
           "id": "c",
-          "text": "We get alerted within minutes of suspicious access patterns",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Real-time security monitoring with automated alerting enables rapid response. Early detection limits damage, allows immediate lockdown, and provides forensic evidence. This is essential for compliance (GDPR, SOC 2, etc.) and protecting customer trust."
+          "text": "No background jobs currently"
         },
         {
           "id": "d",
-          "text": "Not sure what monitoring we have for this",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Security through ignorance is no security at all. Not knowing what protections exist means you can't respond to incidents, can't prove compliance, and likely have significant security gaps. This indicates lack of security ownership and accountability."
+          "text": "Not sure what qualifies as background jobs"
         }
       ]
     },
     {
       "id": 5,
-      "category": "Deployment & Rollback",
-      "question": "You deploy a new feature at 4 PM. By 4:30 PM, customers are reporting errors. How do you fix it?",
+      "category": "Media & Storage",
+      "question": "Do you serve media files (images, videos, documents) to users?",
       "options": [
         {
           "id": "a",
-          "text": "We'd need to manually rewrite code and deploy again (could take hours)",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Dangerous deployment process with no rollback capability. Hours of customer-facing bugs means significant revenue loss, support burden, and reputation damage. This indicates lack of version control, deployment automation, and basic DevOps practices. Every deployment is a risk."
+          "text": "Yes, large volumes (video streaming, image-heavy platform)"
         },
         {
           "id": "b",
-          "text": "We can manually revert to the previous version in 15-30 minutes",
-          "score": 50,
-          "risk_level": "medium",
-          "analysis": "Rollback capability exists but is too slow and manual. 15-30 minutes of degraded customer experience is significant. Manual processes are error-prone - stress during an incident increases chances of mistakes. This approach doesn't scale as deployment frequency increases."
+          "text": "Yes, moderate usage (user avatars, document uploads)"
         },
         {
           "id": "c",
-          "text": "We can rollback to the previous version with one click in under 2 minutes",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Automated, fast rollback enables confidence in frequent deployments. Modern CI/CD pipelines with blue-green or canary deployments allow instant rollback. This minimizes customer impact and enables rapid iteration - you can deploy confidently knowing you can quickly undo mistakes."
+          "text": "Minimal or no media files"
         },
         {
           "id": "d",
-          "text": "Not sure how our deployment process works",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Critical knowledge gap. If the team doesn't understand the deployment process, they can't improve it, can't respond to incidents effectively, and likely have inconsistent deployments. This often indicates 'tribal knowledge' where only one person knows how things work - a major risk."
+          "text": "Currently storing media on application servers"
         }
       ]
     },
     {
       "id": 6,
-      "category": "Scalability",
-      "question": "Your product gets featured on a major news site and traffic increases 10x suddenly. What happens?",
+      "category": "Team Capabilities",
+      "question": "How comfortable is your team with DevOps, Infrastructure, and Cloud technologies?",
       "options": [
         {
           "id": "a",
-          "text": "Website likely crashes or becomes very slow",
-          "score": 0,
-          "risk_level": "high",
-          "analysis": "Missing a major growth opportunity. When your infrastructure can't handle success, you lose potential customers at the exact moment they're most interested. Crashes during viral moments damage reputation permanently - users don't come back. This indicates fixed infrastructure with no scalability planning."
+          "text": "Expert level - we have dedicated DevOps/SRE engineers"
         },
         {
           "id": "b",
-          "text": "Website slows down significantly, some customers can't access it",
-          "score": 25,
-          "risk_level": "medium",
-          "analysis": "Partial capacity but insufficient for traffic spikes. Degraded performance frustrates users - studies show even 1-second delay reduces conversions by 7%. Some users will abandon, and those who persist have a poor first impression. This indicates under-provisioned infrastructure without auto-scaling."
+          "text": "Intermediate - developers handle infrastructure part-time"
         },
         {
           "id": "c",
-          "text": "Infrastructure automatically scales up to handle the load",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Auto-scaling infrastructure handles traffic spikes automatically. This ensures consistent performance during unexpected events, viral moments, or seasonal peaks. You only pay for resources when needed. This architecture is essential for modern applications and enables growth without infrastructure becoming a bottleneck."
+          "text": "Beginner - learning as we go"
         },
         {
           "id": "d",
-          "text": "Haven't thought about this scenario",
-          "score": 0,
-          "risk_level": "high",
-          "analysis": "Lack of capacity planning is planning to fail. Traffic spikes happen - seasonal sales, marketing campaigns, media coverage, or organic viral growth. Without planning for scale, you're setting a ceiling on your own growth. This indicates reactive rather than proactive infrastructure management."
+          "text": "No experience - need significant guidance"
         }
       ]
     },
     {
       "id": 7,
-      "category": "Access Control",
-      "question": "A developer leaves your company today. How do you ensure they can't access your production systems tomorrow?",
+      "category": "Cloud Strategy",
+      "question": "Do you have a preference for a specific cloud provider?",
       "options": [
         {
           "id": "a",
-          "text": "We'd need to manually remember to change passwords/remove access (might take days)",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Severe security risk. Former employees with system access can steal data, sabotage systems, or access sensitive information. This manual, memory-dependent process is unreliable and leaves massive security gaps. One forgotten password could lead to a data breach. This approach violates most security compliance frameworks."
+          "text": "AWS - prefer Amazon Web Services"
         },
         {
           "id": "b",
-          "text": "We remove their access manually from each system (takes a few hours)",
-          "score": 25,
-          "risk_level": "high",
-          "analysis": "Process exists but is slow and error-prone. Hours of delay means risk exposure. Manual removal across multiple systems is tedious and mistakes are common - you might miss one critical system. As your infrastructure grows, this approach doesn't scale. Former employees shouldn't have any access window after departure."
+          "text": "Google Cloud Platform (GCP)"
         },
         {
           "id": "c",
-          "text": "Their access is automatically revoked across all systems immediately through central identity management",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Centralized identity management (SSO, IdP) ensures instant, comprehensive access revocation. One action removes access to all systems - databases, cloud consoles, applications, and repositories. This is essential for security, compliance (SOC 2, ISO 27001), and audit trails. Reduces both security risk and administrative burden."
+          "text": "Azure or other cloud provider"
         },
         {
           "id": "d",
-          "text": "We don't have a formal process for this",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Absence of offboarding process is a critical security and compliance failure. You likely have former employees who still have active credentials. This creates huge liability - data breaches, intellectual property theft, and compliance violations. Every organization needs a documented, reliable offboarding checklist."
+          "text": "No preference - open to recommendations"
         }
       ]
     },
     {
       "id": 8,
-      "category": "Compliance & Audit",
-      "question": "A customer asks 'Who accessed my personal data in the last 30 days?' Can you answer this?",
+      "category": "Support & Operations",
+      "question": "Do you have or plan to have 24x7 infrastructure support?",
       "options": [
         {
           "id": "a",
-          "text": "No, we don't track this level of detail",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Legal and compliance failure. GDPR, CCPA, and most privacy regulations require tracking data access. Without audit logs, you can't prove compliance, investigate breaches, or respond to customer rights requests. This exposes you to regulatory fines and lawsuits. Customers increasingly expect transparency about their data."
+          "text": "Yes, we have dedicated on-call rotation and 24x7 monitoring"
         },
         {
           "id": "b",
-          "text": "Maybe - we'd need to manually search through various log files (could take days)",
-          "score": 25,
-          "risk_level": "high",
-          "analysis": "Logs exist but are not aggregated or searchable. Manual investigation taking days is unacceptable for regulatory response times. GDPR requires responses within 30 days, but customers expect faster. Scattered logs mean incomplete audit trails and difficulty detecting patterns or breaches. This indicates lack of log management infrastructure."
+          "text": "Planning to implement as we scale"
         },
         {
           "id": "c",
-          "text": "Yes - we can pull an audit report showing exactly who accessed what and when",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Centralized, searchable audit logs enable compliance and security. You can quickly respond to customer requests, detect unauthorized access, prove compliance to auditors, and investigate incidents. This is mandatory for SOC 2, ISO 27001, HIPAA, and privacy regulations. Demonstrates mature security posture."
+          "text": "No, business hours support only"
         },
         {
           "id": "d",
-          "text": "Not sure if we log this information",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Uncertainty about audit capabilities is a compliance red flag. If you don't know what's logged, you can't prove compliance, respond to audits, or investigate incidents. This indicates lack of security governance and could prevent you from getting enterprise customers or certifications. Auditors will flag this immediately."
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "category": "Resilience & Dependencies",
-      "question": "A critical third-party API you depend on goes down for 2 hours. What happens to your application?",
-      "options": [
-        {
-          "id": "a",
-          "text": "Our application completely breaks - customers can't use it",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Critical single point of failure outside your control. Your reliability depends entirely on someone else's uptime. This creates terrible user experience - your customers blame you, not the third party. This indicates lack of circuit breakers, fallbacks, or resilience patterns. Your SLA can never be better than your weakest dependency."
-        },
-        {
-          "id": "b",
-          "text": "Some features break, customers see error messages",
-          "score": 25,
-          "risk_level": "high",
-          "analysis": "Partial impact but still poor user experience. Error messages frustrate users and create support burden. While better than complete failure, this indicates loose coupling is incomplete. Modern applications should degrade gracefully - non-critical features should fail silently while core functionality continues working."
-        },
-        {
-          "id": "c",
-          "text": "Application continues working with degraded functionality or cached data",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Resilient architecture with graceful degradation. Using circuit breakers, caching, fallbacks, and async processing means third-party failures don't cascade. Users might notice reduced functionality but core features work. This demonstrates mature engineering - anticipating failures and designing around them. Essential for high-availability applications."
-        },
-        {
-          "id": "d",
-          "text": "Haven't mapped our dependencies to know the impact",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Lack of dependency awareness is dangerous. You can't plan for failures you don't understand. Hidden dependencies cause unexpected outages - you won't know what broke or how to fix it quickly. This indicates lack of architecture documentation and no failure mode analysis. You're flying blind."
-        }
-      ]
-    },
-    {
-      "id": 10,
-      "category": "Documentation & Knowledge Management",
-      "question": "Your lead DevOps engineer wins the lottery and quits immediately. Can someone else understand and manage your infrastructure?",
-      "options": [
-        {
-          "id": "a",
-          "text": "No - most knowledge is in their head, we'd be in serious trouble",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Critical bus factor of 1 - catastrophic business risk. Losing one person could cripple operations for weeks or months. You can't onboard new engineers, respond to incidents effectively, or make infrastructure changes confidently. This 'hero culture' is common but extremely dangerous. You're one resignation away from crisis."
-        },
-        {
-          "id": "b",
-          "text": "We have some scattered documentation but would struggle significantly",
-          "score": 25,
-          "risk_level": "high",
-          "analysis": "Partial documentation helps but isn't sufficient. Scattered, outdated docs are almost as bad as no docs - they waste time and may contain incorrect information. Without comprehensive documentation, knowledge transfer is slow, mistakes are common, and new team members take months to become productive. This indicates documentation debt."
-        },
-        {
-          "id": "c",
-          "text": "Yes - we have comprehensive, up-to-date infrastructure-as-code and documentation",
-          "score": 100,
-          "risk_level": "low",
-          "analysis": "Optimal solution: Infrastructure-as-code (Terraform, CloudFormation) serves as living documentation. Combined with proper README files, runbooks, and architecture diagrams, anyone can understand and operate the infrastructure. This enables team growth, reduces onboarding time from months to weeks, and eliminates single points of knowledge failure. Essential for scaling teams."
-        },
-        {
-          "id": "d",
-          "text": "Our infrastructure setup isn't documented anywhere",
-          "score": 0,
-          "risk_level": "critical",
-          "analysis": "Undocumented infrastructure is a ticking time bomb. You can't audit for security issues, can't replicate environments reliably, can't disaster recover properly, and can't pass compliance audits. Every change is risky because no one fully understands the system. This indicates technical debt and poor engineering practices that will eventually cause major incidents."
+          "text": "Haven't considered this yet"
         }
       ]
     }
-  ],
-  "scoring_framework": {
-    "score_ranges": [
-      {
-        "min": 0,
-        "max": 250,
-        "category": "Critical Risk",
-        "risk_level": "critical",
-        "description": "Immediate attention required. Multiple critical gaps expose the business to severe operational, security, and financial risks. Infrastructure likely causes frequent incidents and limits business growth.",
-        "recommendations": [
-          "Schedule emergency infrastructure assessment",
-          "Prioritize disaster recovery and backup implementation",
-          "Establish basic monitoring and alerting",
-          "Document critical systems and access procedures"
-        ]
-      },
-      {
-        "min": 251,
-        "max": 500,
-        "category": "Significant Gaps",
-        "risk_level": "high",
-        "description": "Basic infrastructure exists but with notable weaknesses. You're managing to operate but inefficiently, with higher costs and risks than necessary. Incidents are reactive rather than prevented.",
-        "recommendations": [
-          "Implement automation for manual processes",
-          "Establish centralized logging and monitoring",
-          "Create infrastructure-as-code for critical systems",
-          "Develop disaster recovery and business continuity plans"
-        ]
-      },
-      {
-        "min": 501,
-        "max": 750,
-        "category": "Solid Foundation",
-        "risk_level": "medium",
-        "description": "Strong infrastructure practices in place. Most critical areas covered with room for optimization. You're positioned for growth but can improve efficiency and resilience.",
-        "recommendations": [
-          "Optimize costs through better resource management",
-          "Enhance automation and self-service capabilities",
-          "Implement advanced observability and tracing",
-          "Establish FinOps practices for cloud spending"
-        ]
-      },
-      {
-        "min": 751,
-        "max": 1000,
-        "category": "Excellent",
-        "risk_level": "low",
-        "description": "Industry-leading infrastructure practices. Strong automation, resilience, and observability. Infrastructure enables rather than limits business growth.",
-        "recommendations": [
-          "Focus on continuous improvement and innovation",
-          "Share best practices across teams",
-          "Explore advanced topics like chaos engineering",
-          "Mentor others in the industry"
-        ]
-      }
-    ]
-  }
+  ]
 }
