@@ -7,12 +7,13 @@
       "options": [
         {
           "id": "a",
-          "text": "Building from scratch - haven't deployed anything yet"
+          "text": "Building from scratch - haven't deployed anything yet",
+          "aws_resources": ["BASIC_SETUP", "SIMPLE_ARCH"]
         },
         {
           "id": "b",
           "text": "In production with basic setup - needs improvement",
-          "preference": "AWS_EVENT_DRIVEN"
+          "aws_resources": ["PRODUCTION_READY", "HIGH_AVAILABILITY", "MULTI_AZ"]
         }
       ]
     },
@@ -23,15 +24,18 @@
       "options": [
         {
           "id": "a",
-          "text": "< 1,000 users"
+          "text": "< 1,000 users",
+          "aws_resources": ["LOW_SCALE", "SINGLE_INSTANCE"]
         },
         {
           "id": "b",
-          "text": "1,000 - 10,000 users"
+          "text": "1,000 - 10,000 users",
+          "aws_resources": ["MEDIUM_SCALE", "AUTO_SCALING", "LOAD_BALANCER"]
         },
         {
           "id": "c",
-          "text": ">10,000 users"
+          "text": ">10,000 users",
+          "aws_resources": ["HIGH_SCALE", "AUTO_SCALING", "LOAD_BALANCER", "MULTI_AZ", "REDIS"]
         }
       ]
     },
@@ -42,19 +46,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Yes, we handle healthcare data (HIPAA) or payment data (PCI DSS)"
+          "text": "Yes, we handle healthcare data (HIPAA) or payment data (PCI DSS)",
+          "aws_resources": ["ENTERPRISE", "VPC", "WAF", "CLOUDTRAIL", "ENCRYPTION", "COMPLIANCE_HIPAA"]
         },
         {
           "id": "b",
-          "text": "Yes, we need SOC 2 or ISO 27001 for enterprise customers"
+          "text": "Yes, we need SOC 2 or ISO 27001 for enterprise customers",
+          "aws_resources": ["ENTERPRISE", "VPC", "CLOUDTRAIL", "ENCRYPTION", "COMPLIANCE_SOC2"]
         },
         {
           "id": "c",
-          "text": "Only GDPR/privacy regulations (data protection)"
+          "text": "Only GDPR/privacy regulations (data protection)",
+          "aws_resources": ["ENCRYPTION", "BACKUP"]
         },
         {
           "id": "d",
-          "text": "No compliance requirements currently"
+          "text": "No compliance requirements currently",
+          "aws_resources": []
         }
       ]
     },
@@ -65,19 +73,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Yes, critical to core functionality (payment processing, data pipelines)"
+          "text": "Yes, critical to core functionality (payment processing, data pipelines)",
+          "aws_resources": ["LAMBDA", "SQS", "EVENTBRIDGE", "CRITICAL_JOBS"]
         },
         {
           "id": "b",
-          "text": "Yes, for non-critical tasks (emails, notifications, analytics)"
+          "text": "Yes, for non-critical tasks (emails, notifications, analytics)",
+          "aws_resources": ["LAMBDA", "SQS"]
         },
         {
           "id": "c",
-          "text": "No background jobs currently"
+          "text": "No background jobs currently",
+          "aws_resources": []
         },
         {
           "id": "d",
-          "text": "Not sure what qualifies as background jobs"
+          "text": "Not sure what qualifies as background jobs",
+          "aws_resources": []
         }
       ]
     },
@@ -88,19 +100,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Yes, large volumes (video streaming, image-heavy platform)"
+          "text": "Yes, large volumes (video streaming, image-heavy platform)",
+          "aws_resources": ["S3", "CLOUDFRONT", "HIGH_BANDWIDTH"]
         },
         {
           "id": "b",
-          "text": "Yes, moderate usage (user avatars, document uploads)"
+          "text": "Yes, moderate usage (user avatars, document uploads)",
+          "aws_resources": ["S3", "CLOUDFRONT"]
         },
         {
           "id": "c",
-          "text": "Minimal or no media files"
+          "text": "Minimal or no media files",
+          "aws_resources": []
         },
         {
           "id": "d",
-          "text": "Currently storing media on application servers"
+          "text": "Currently storing media on application servers",
+          "aws_resources": ["S3", "CLOUDFRONT", "MIGRATION"]
         }
       ]
     },
@@ -111,19 +127,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Expert level - we have dedicated DevOps/SRE engineers"
+          "text": "Expert level - we have dedicated DevOps/SRE engineers",
+          "aws_resources": ["CUSTOM_CONFIG"]
         },
         {
           "id": "b",
-          "text": "Intermediate - developers handle infrastructure part-time"
+          "text": "Intermediate - developers handle infrastructure part-time",
+          "aws_resources": ["MANAGED_SERVICES"]
         },
         {
           "id": "c",
-          "text": "Beginner - learning as we go"
+          "text": "Beginner - learning as we go",
+          "aws_resources": ["MANAGED_SERVICES", "SIMPLE_ARCH"]
         },
         {
           "id": "d",
-          "text": "No experience - need significant guidance"
+          "text": "No experience - need significant guidance",
+          "aws_resources": ["FULLY_MANAGED", "SIMPLE_ARCH"]
         }
       ]
     },
@@ -134,19 +154,23 @@
       "options": [
         {
           "id": "a",
-          "text": "AWS - prefer Amazon Web Services"
+          "text": "AWS - prefer Amazon Web Services",
+          "aws_resources": ["AWS"]
         },
         {
           "id": "b",
-          "text": "Google Cloud Platform (GCP)"
+          "text": "Google Cloud Platform (GCP)",
+          "aws_resources": ["GCP_PREFERRED"]
         },
         {
           "id": "c",
-          "text": "Azure or other cloud provider"
+          "text": "Azure or other cloud provider",
+          "aws_resources": ["AZURE_PREFERRED"]
         },
         {
           "id": "d",
-          "text": "No preference - open to recommendations"
+          "text": "No preference - open to recommendations",
+          "aws_resources": ["AWS"]
         }
       ]
     },
@@ -157,19 +181,23 @@
       "options": [
         {
           "id": "a",
-          "text": "Yes, we have dedicated on-call rotation and 24x7 monitoring"
+          "text": "Yes, we have dedicated on-call rotation and 24x7 monitoring",
+          "aws_resources": ["CLOUDWATCH", "SNS", "ALERTING", "24X7"]
         },
         {
           "id": "b",
-          "text": "Planning to implement as we scale"
+          "text": "Planning to implement as we scale",
+          "aws_resources": ["CLOUDWATCH", "SNS"]
         },
         {
           "id": "c",
-          "text": "No, business hours support only"
+          "text": "No, business hours support only",
+          "aws_resources": ["CLOUDWATCH"]
         },
         {
           "id": "d",
-          "text": "Haven't considered this yet"
+          "text": "Haven't considered this yet",
+          "aws_resources": []
         }
       ]
     }
