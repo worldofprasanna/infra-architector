@@ -1,74 +1,20 @@
 "use client"
 
 import { useState, useEffect, useRef } from 'react'
-import { questions, type Category, categoryNames, maxScorePerCategory, maxTotalScore, getScoreRangeInfo } from '@/data/questions'
+import { questions } from '@/data/questions'
+import { selectTemplate } from '@/lib/templateSelector'
+import { type AwsTemplate } from '@/lib/templates'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { ChevronRight, ChevronLeft, Keyboard, Mail, Trophy, TrendingUp, Shield, Server, Layers, Home, Download } from 'lucide-react'
-import { type EvaluationResult } from '@/lib/db'
+import { ChevronRight, ChevronLeft, Keyboard, Mail, Home, Download, Server, CheckCircle2, DollarSign } from 'lucide-react'
 import TalkToUsButton from './TalkToUsButton'
 import ClientLogos from './ClientLogos'
 
 type Phase = 'quiz' | 'email' | 'results'
-
-const getCategoryIcon = (category: string): React.ReactNode => {
-  const categoryLower = category.toLowerCase()
-  if (categoryLower.includes('disaster') || categoryLower.includes('recovery')) return <Server className="w-5 h-5" />
-  if (categoryLower.includes('availability')) return <Server className="w-5 h-5" />
-  if (categoryLower.includes('cost')) return <TrendingUp className="w-5 h-5" />
-  if (categoryLower.includes('security') || categoryLower.includes('monitoring')) return <Shield className="w-5 h-5" />
-  if (categoryLower.includes('deployment') || categoryLower.includes('rollback')) return <Layers className="w-5 h-5" />
-  if (categoryLower.includes('scalability')) return <TrendingUp className="w-5 h-5" />
-  if (categoryLower.includes('access') || categoryLower.includes('control')) return <Shield className="w-5 h-5" />
-  if (categoryLower.includes('compliance') || categoryLower.includes('audit')) return <Shield className="w-5 h-5" />
-  if (categoryLower.includes('resilience') || categoryLower.includes('dependencies')) return <Layers className="w-5 h-5" />
-  if (categoryLower.includes('documentation') || categoryLower.includes('knowledge')) return <Layers className="w-5 h-5" />
-  return <Server className="w-5 h-5" />
-}
-
-const getScoreColor = (percentage: number) => {
-  if (percentage >= 80) return 'text-green-600 bg-green-50 border-green-200'
-  if (percentage >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-  return 'text-red-600 bg-red-50 border-red-200'
-}
-
-const getGradeBadgeColor = (percentage: number) => {
-  if (percentage >= 80) return 'bg-gradient-to-br from-green-500 to-emerald-600'
-  if (percentage >= 60) return 'bg-gradient-to-br from-yellow-500 to-orange-600'
-  return 'bg-gradient-to-br from-red-500 to-rose-600'
-}
-
-const getProgressBarColor = (percentage: number) => {
-  if (percentage >= 80) return '[&>div]:bg-green-600'
-  if (percentage >= 60) return '[&>div]:bg-yellow-500'
-  return '[&>div]:bg-red-600'
-}
-
-const getCardGradient = (percentage: number) => {
-  if (percentage >= 80) return 'from-green-300 via-emerald-400 to-teal-500'
-  if (percentage >= 60) return 'from-yellow-300 via-amber-400 to-orange-500'
-  return 'from-red-300 via-rose-400 to-pink-500'
-}
-
-const getScoreGrade = (percentage: number) => {
-  if (percentage >= 90) return 'A+'
-  if (percentage >= 80) return 'A'
-  if (percentage >= 70) return 'B'
-  if (percentage >= 60) return 'C'
-  if (percentage >= 50) return 'D'
-  return 'F'
-}
-
-const getOverallMessage = (percentage: number) => {
-  if (percentage >= 80) return "Excellent! Your infrastructure is well-architected and production-ready."
-  if (percentage >= 60) return "Good foundation! There are some areas for improvement to reach excellence."
-  if (percentage >= 40) return "Moderate setup. Consider upgrading key areas to improve reliability and scalability."
-  return "Significant improvements needed. Focus on core infrastructure, security, and scalability."
-}
 
 // Shuffle function using Fisher-Yates algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -85,7 +31,8 @@ export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [transitioning, setTransitioning] = useState(false)
-  const [scores, setScores] = useState<Record<Category, number> | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<AwsTemplate | null>(null)
+  const [awsResources, setAwsResources] = useState<string[]>([])
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -102,7 +49,7 @@ export default function Quiz() {
     }))
   )
 
-  // Calculate progress based on answered questions, not current question
+  // Calculate progress based on answered questions
   const answeredCount = Object.keys(answers).length
   const progress = (answeredCount / shuffledQuestions.length) * 100
   const currentQ = shuffledQuestions[currentQuestion]
@@ -110,6 +57,8 @@ export default function Quiz() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (phase !== 'quiz') return
+
       const index = parseInt(e.key)
 
       if (!isNaN(index) && index >= 1 && index <= currentQ.options.length) {
@@ -127,7 +76,7 @@ export default function Quiz() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentQuestion, currentQ])
+  }, [currentQuestion, currentQ, phase])
 
   const handleNext = () => {
     if (currentQuestion < shuffledQuestions.length - 1) {
@@ -137,21 +86,10 @@ export default function Quiz() {
         setTransitioning(false)
       }, 150)
     } else {
-      // Calculate scores
-      const calculatedScores: Record<Category, number> = {}
-
-      Object.entries(answers).forEach(([questionId, optionId]) => {
-        const question = shuffledQuestions.find(q => q.id === parseInt(questionId))
-        const option = question?.options.find(opt => opt.id === optionId)
-        if (option && question) {
-          if (!calculatedScores[question.category]) {
-            calculatedScores[question.category] = 0
-          }
-          calculatedScores[question.category] += option.score
-        }
-      })
-
-      setScores(calculatedScores)
+      // Quiz completed - select template
+      const match = selectTemplate(answers, shuffledQuestions)
+      setSelectedTemplate(match.template)
+      setAwsResources(match.userResources)
       setPhase('email')
     }
   }
@@ -192,16 +130,20 @@ export default function Quiz() {
     setIsSubmitting(true)
 
     // Save to database
-    if (scores && !hasSaved.current) {
+    if (selectedTemplate && !hasSaved.current) {
       hasSaved.current = true
-      await saveEvaluation(email, scores)
+      await saveRecommendation(email, selectedTemplate, awsResources)
     }
 
     setIsSubmitting(false)
     setPhase('results')
   }
 
-  const saveEvaluation = async (email: string, scores: Record<Category, number>) => {
+  const saveRecommendation = async (
+    email: string,
+    template: AwsTemplate,
+    resources: string[]
+  ) => {
     setIsSaving(true)
     setSaveError(null)
 
@@ -213,7 +155,10 @@ export default function Quiz() {
         },
         body: JSON.stringify({
           email,
-          scores
+          answers,
+          awsResources: resources,
+          selectedTemplate: template.id,
+          estimatedMonthlyCost: template.estimatedMonthlyCost
         }),
       })
 
@@ -223,7 +168,7 @@ export default function Quiz() {
         setSaveError('Failed to save results. But you can still view them below.')
       }
     } catch (error) {
-      console.error('Error saving evaluation:', error)
+      console.error('Error saving recommendation:', error)
       setSaveError('Failed to save results. But you can still view them below.')
     } finally {
       setIsSaving(false)
@@ -231,7 +176,7 @@ export default function Quiz() {
   }
 
   const downloadPDF = async () => {
-    if (!scores || !email || !answers) {
+    if (!selectedTemplate || !email || !answers) {
       return
     }
 
@@ -245,7 +190,8 @@ export default function Quiz() {
         },
         body: JSON.stringify({
           email,
-          scores,
+          template: selectedTemplate,
+          awsResources,
           answers
         }),
       })
@@ -258,7 +204,7 @@ export default function Quiz() {
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `infrastructure-audit-${Date.now()}.pdf`
+      link.download = `aws-architecture-${selectedTemplate.id}-${Date.now()}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -275,13 +221,16 @@ export default function Quiz() {
     setPhase('quiz')
     setCurrentQuestion(0)
     setAnswers({})
-    setScores(null)
+    setSelectedTemplate(null)
+    setAwsResources([])
     setEmail('')
     setEmailError('')
     hasSaved.current = false
   }
 
-  // Render Email Phase
+  // ============================================================================
+  // RENDER: Email Phase
+  // ============================================================================
   if (phase === 'email') {
     return (
       <div className="h-[calc(100vh-4rem)] bg-white py-6 px-6 lg:px-12 flex flex-col justify-between">
@@ -292,7 +241,7 @@ export default function Quiz() {
               Almost There!
             </h1>
             <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
-              Enter your business email to view your infrastructure evaluation results and receive a personalized report.
+              Enter your business email to view your infrastructure architecture recommendation and receive a personalized report.
             </p>
             <TalkToUsButton />
           </div>
@@ -339,7 +288,7 @@ export default function Quiz() {
                     </Button>
 
                     <p className="text-xs text-gray-500 text-center">
-                      Your email will be used to save your evaluation results. We respect your privacy and won't spam you.
+                      Your email will be used to save your architecture recommendation. We respect your privacy and won't spam you.
                     </p>
                   </form>
                 </CardContent>
@@ -353,20 +302,21 @@ export default function Quiz() {
     )
   }
 
-  // Render Results Phase
-  if (phase === 'results' && scores) {
-    const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0)
-    const overallPercentage = Math.round((totalScore / maxTotalScore) * 100)
-
+  // ============================================================================
+  // RENDER: Results Phase
+  // ============================================================================
+  if (phase === 'results' && selectedTemplate) {
     return (
       <div className="calc(100vh - 4rem) bg-white py-8 px-6 lg:px-12 flex flex-col justify-between">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left info section */}
           <div className="text-center lg:text-left space-y-6">
             <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
-            Evaluate Your Infrastructure in Just 2 Minutes 🚀
+              Get Your Infrastructure Architecture in Just 2 Minutes 🚀
             </h1>
-            <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">Spend a few minutes to understand your current infrastructure and receive a personalized improvement report.  </p>
+            <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
+              Based on your answers, we've recommended the perfect AWS architecture for your needs.
+            </p>
             {isSaving && (
               <p className="text-sm text-blue-600">Saving your results...</p>
             )}
@@ -379,68 +329,76 @@ export default function Quiz() {
 
           {/* Right - Results Card */}
           <div className="relative">
-            <div className={`absolute inset-1 rounded-3xl bg-gradient-to-br ${getCardGradient(overallPercentage)} blur-xl animate-gradient opacity-60`} />
+            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-green-300 via-emerald-400 to-teal-500 blur-xl animate-gradient opacity-60" />
             <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6 max-h-[80vh] overflow-y-auto">
-              {/* Overall Score */}
-              <Card className="shadow-2xl mb-6 border-2">
-                <CardContent className="pt-6 pb-6">
-                  <div className="flex items-center justify-between gap-3 mb-4">
-                    <CardTitle className="text-2xl font-bold text-gray-900">
-                      Overall Score: {overallPercentage}%
-                    </CardTitle>
-                    <div className={`flex items-center justify-center w-14 h-14 rounded-full ${getGradeBadgeColor(overallPercentage)} text-white text-xl font-bold`}>
-                    {getScoreGrade(overallPercentage)}
+              {/* Template Name */}
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedTemplate.name}</h3>
+              </div>
+
+              {/* Description */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Description</h4>
+                <p className="text-base text-gray-700 leading-relaxed">{selectedTemplate.description}</p>
+              </div>
+
+              {/* Estimated Cost Card */}
+              <Card className="shadow-lg mb-6 border-2 border-green-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-green-600 rounded-lg">
+                      <DollarSign className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-gray-600">Estimated Monthly Cost</p>
+                      <p className="text-2xl font-bold text-green-700">{selectedTemplate.estimatedMonthlyCost}</p>
                     </div>
                   </div>
-                  <div className="mb-4">
-                    <Progress value={overallPercentage} className={`h-3 ${getProgressBarColor(overallPercentage)}`} />
-                    <p className="text-sm text-gray-600 mt-2">
-                      {totalScore} out of {maxTotalScore} points
-                    </p>
-                  </div>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={downloadPDF}
-                    disabled={isDownloadingPDF}
-                    className="w-full flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
-                  >
-                    <Download className="w-4 h-4" />
-                    {isDownloadingPDF ? 'Generating...' : 'Download Report'}
-                  </Button>
                 </CardContent>
               </Card>
 
-              {/* Category Scores */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {(Object.keys(scores) as Category[]).map((category) => {
-                  const score = scores[category]
-                  const categoryMax = maxScorePerCategory[category]
-                  const percentage = Math.round((score / categoryMax) * 100)
-                  const colorClass = getScoreColor(percentage)
-                  const progressColor = getProgressBarColor(percentage)
-
-                  return (
-                    <Card key={category} className={`shadow-lg border-2 ${colorClass}`}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="flex items-center gap-2 text-sm">
-                            {getCategoryIcon(category)}
-                            <span className="hidden sm:inline">{categoryNames[category]}</span>
-                          </CardTitle>
-                          <span className="text-lg font-bold">{percentage}%</span>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pb-3">
-                        <Progress value={percentage} className={`h-2 mb-1 ${progressColor}`} />
-                        <p className="text-xs">
-                          {score}/{categoryMax} pts
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
+              {/* Best For Section */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Best For</h4>
+                <ul className="space-y-2">
+                  {selectedTemplate.bestFor.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-gray-700">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
+
+              {/* AWS Services/Components */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">AWS Services Included</h4>
+                <div className="space-y-3">
+                  {selectedTemplate.components.map((component, idx) => (
+                    <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <Server className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h5 className="font-semibold text-blue-900 text-sm">{component.service}</h5>
+                          <p className="text-xs text-gray-600 mt-1">{component.purpose}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Download PDF Button */}
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={downloadPDF}
+                disabled={isDownloadingPDF}
+                className="w-full flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
+              >
+                <Download className="w-4 h-4" />
+                {isDownloadingPDF ? 'Generating...' : 'Download as PDF'}
+              </Button>
 
               {/* Action Buttons */}
               <div className="flex justify-center gap-4 mt-6">
@@ -460,7 +418,9 @@ export default function Quiz() {
     )
   }
 
-  // Render Quiz Phase (default)
+  // ============================================================================
+  // RENDER: Quiz Phase (ORIGINAL LEFT-RIGHT UI)
+  // ============================================================================
   return (
     <div className="h-[calc(100vh-4rem)] bg-white px-6 py-4 lg:px-12 flex flex-col justify-between">
       {/* Two-column layout */}
@@ -469,11 +429,10 @@ export default function Quiz() {
         {/* Left info section */}
         <div className="text-center lg:text-left space-y-4">
           <h1 className="text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
-            Evaluate Your Infrastructure in Just 2 Minutes 🚀
+            Get Your Infrastructure Architecture in Just 2 Minutes 🚀
           </h1>
           <p className="text-base text-gray-600 max-w-md mx-auto lg:mx-0">
-            Spend a few minutes to understand your current infrastructure and
-            receive a personalized improvement report.
+            Answer {shuffledQuestions.length} quick questions and get a personalized AWS architecture recommendation.
           </p>
           <TalkToUsButton />
         </div>
