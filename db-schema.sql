@@ -1,23 +1,51 @@
--- Create evaluation_results table
-CREATE TABLE IF NOT EXISTS evaluation_results (
+
+-- INFRA ARCHITECTOR - DATABASE SCHEMA
+
+-- Main table for architecture recommendations
+CREATE TABLE architecture_recommendations (
   id SERIAL PRIMARY KEY,
+
+  -- User information
   email VARCHAR(255) NOT NULL,
-  disaster_recovery_score INTEGER NOT NULL,
-  high_availability_score INTEGER NOT NULL,
-  cost_management_score INTEGER NOT NULL,
-  security_monitoring_score INTEGER NOT NULL,
-  deployment_and_rollback_score INTEGER NOT NULL,
-  scalability_score INTEGER NOT NULL,
-  access_control_score INTEGER NOT NULL,
-  compliance_and_audit_score INTEGER NOT NULL,
-  resilience_and_dependencies_score INTEGER NOT NULL,
-  documentation_and_knowledge_management_score INTEGER NOT NULL,
-  total_score INTEGER NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+
+  -- AWS resources collected from answers
+  -- Example: ["S3", "CLOUDFRONT", "LAMBDA", "MULTI_AZ", "AUTO_SCALING"]
+  aws_resources TEXT[] NOT NULL,
+
+  -- Recommended template
+  selected_template VARCHAR(100) NOT NULL,
+
+  -- Estimated monthly cost for this architecture
+  -- Example: "$200 - $500", "$800 - $2,000", "$2,000+"
+  estimated_monthly_cost VARCHAR(100),
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index on email for faster lookups
-CREATE INDEX IF NOT EXISTS idx_evaluation_results_email ON evaluation_results(email);
+-- ============================================================================
+-- INDEXES
+-- ============================================================================
 
--- Create index on created_at for sorting
-CREATE INDEX IF NOT EXISTS idx_evaluation_results_created_at ON evaluation_results(created_at);
+CREATE INDEX idx_email ON architecture_recommendations(email);
+CREATE INDEX idx_template ON architecture_recommendations(selected_template);
+CREATE INDEX idx_created_at ON architecture_recommendations(created_at DESC);
+
+-- Index for querying AWS resources (array)
+CREATE INDEX idx_resources ON architecture_recommendations USING GIN (aws_resources);
+
+-- ============================================================================
+-- SAMPLE DATA (for testing)
+-- ============================================================================
+
+-- INSERT INTO architecture_recommendations (
+--   email,
+--   aws_resources,
+--   selected_template,
+--   estimated_monthly_cost
+-- ) VALUES (
+--   'test@example.com',
+--   ARRAY['BASIC_SETUP', 'SIMPLE_ARCH', 'LOW_SCALE', 'AWS'],
+--   'basic_web_app',
+--   '$200 - $500'
+-- );
