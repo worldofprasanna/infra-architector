@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Infrastructure Evaluator",
-  description: "know about your infrastructure in minutes",
+  title: "Infra Architector",
+  description: "Get your infrastructure architecture in minutes",
 
   icons: {
     icon: "/ezyinfra-icon.png",

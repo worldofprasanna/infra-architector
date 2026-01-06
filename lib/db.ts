@@ -14,19 +14,12 @@ const pool = new Pool({
 
 export const db = pool
 
-export type EvaluationResult = {
+// Architecture Recommendation Type
+export type ArchitectureRecommendation = {
   id?: number
   email: string
-  disaster_recovery_score: number
-  high_availability_score: number
-  cost_management_score: number
-  security_monitoring_score: number
-  deployment_and_rollback_score: number
-  scalability_score: number
-  access_control_score: number
-  compliance_and_audit_score: number
-  resilience_and_dependencies_score: number
-  documentation_and_knowledge_management_score: number
-  total_score: number
+  aws_resources: string[]
+  selected_template: string
+  estimated_monthly_cost?: string
   created_at?: string
 }
