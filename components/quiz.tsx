@@ -237,7 +237,7 @@ export default function Quiz() {
           {/* Left info section */}
           <div className="text-center lg:text-left space-y-6">
             <h1 className="text-4xl lg:text-5xl font-extrabold text-gray-900 leading-tight">
-              Almost There!
+              Almost There! 🎉
             </h1>
             <p className="text-lg text-gray-600 max-w-md mx-auto lg:mx-0">
               Enter your business email to view your infrastructure architecture recommendation and receive a personalized report.
@@ -247,48 +247,62 @@ export default function Quiz() {
 
           {/* Right - Email Card */}
           <div className="relative">
-            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-blue-300 via-violet-500 to-pink-700 blur-xl animate-gradient opacity-90" />
+            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-emerald-200 via-teal-300 to-cyan-300 blur-xl animate-gradient opacity-60" />
             <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6">
-              <Card className="shadow-2xl rounded-2xl border border-gray-100">
-                <CardHeader className="text-center">
-                  <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                    <Mail className="w-6 h-6 text-blue-600" />
+              <Card className="shadow-2xl rounded-2xl border-2 border-gray-100">
+                <CardHeader className="text-center bg-gradient-to-r from-gray-50 to-white rounded-t-2xl">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-full flex items-center justify-center mb-4 shadow-lg transform hover:scale-110 transition-transform duration-300">
+                    <Mail className="w-8 h-8 text-emerald-600" />
                   </div>
-                  <CardTitle className="text-2xl">Get Your Results</CardTitle>
-                  <CardDescription className="text-base">
-                    Enter your business email to continue
+                  <CardTitle className="text-2xl font-bold text-gray-900">Get Your Results</CardTitle>
+                  <CardDescription className="text-base text-gray-600 mt-2">
+                    ✉️ Enter your business email to continue
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <form onSubmit={handleEmailSubmit} className="space-y-6">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Business Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="you@company.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-12"
-                        autoFocus
-                      />
+                      <Label htmlFor="email" className="text-sm font-semibold text-gray-700">Business Email</Label>
+                      <div className="relative">
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="you@company.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="h-12 pl-4 pr-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400 transition-all duration-200"
+                          autoFocus
+                        />
+                      </div>
                       {emailError && (
-                        <p className="text-sm text-red-500 mt-1">{emailError}</p>
+                        <p className="text-sm text-red-500 mt-1 flex items-center gap-1">
+                          <span>⚠️</span> {emailError}
+                        </p>
                       )}
                     </div>
 
                     <Button
                       type="submit"
-                      variant="outline"
-                      className="w-full h-12 border-2 rounded-3xl border-gray-500 font-bold text-gray-700 bg-gray-50 hover:bg-gray-800 hover:border-none hover:text-white transition-all duration-300"
+                      className="w-full h-12 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Processing...' : 'View My Results'}
+                      {isSubmitting ? (
+                        <span className="flex items-center gap-2">
+                          <span className="animate-spin">⏳</span> Processing...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          View My Results <ChevronRight className="w-4 h-4" />
+                        </span>
+                      )}
                     </Button>
 
-                    <p className="text-xs text-gray-500 text-center">
-                      Your email will be used to save your architecture recommendation. We respect your privacy and won't spam you.
-                    </p>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                      <p className="text-xs text-emerald-700 text-center flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                        <span>Your email will be used to save your architecture recommendation. We respect your privacy and won't spam you.</span>
+                      </p>
+                    </div>
                   </form>
                 </CardContent>
               </Card>
@@ -317,10 +331,16 @@ export default function Quiz() {
               Based on your answers, we've recommended the perfect AWS architecture for your needs.
             </p>
             {isSaving && (
-              <p className="text-sm text-blue-600">Saving your results...</p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                <span className="animate-spin">⏳</span>
+                <p className="text-sm text-emerald-600 font-medium">Saving your results...</p>
+              </div>
             )}
             {saveError && (
-              <p className="text-sm text-yellow-600">{saveError}</p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <span>⚠️</span>
+                <p className="text-sm text-yellow-700 font-medium">{saveError}</p>
+              </div>
             )}
             <TalkToUsButton />
             <ClientLogos />
@@ -328,29 +348,32 @@ export default function Quiz() {
 
           {/* Right - Results Card */}
           <div className="relative">
-            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-green-300 via-emerald-400 to-teal-500 blur-xl animate-gradient opacity-60" />
+            <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-400 blur-xl animate-gradient opacity-70" />
             <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-6 max-h-[80vh] overflow-y-auto">
-              {/* Template Name */}
+              {/* Template Name with gradient badge */}
               <div className="mb-6">
+                <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-emerald-400 to-teal-500 text-white text-xs font-semibold mb-3 shadow-md">
+                  ✨ Your Perfect Match
+                </div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">{selectedTemplate.name}</h3>
               </div>
 
               {/* Description */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">Description</h4>
+                <h4 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-2">📋 Description</h4>
                 <p className="text-base text-gray-700 leading-relaxed">{selectedTemplate.description}</p>
               </div>
 
               {/* Estimated Cost Card */}
-              <Card className="shadow-lg mb-6 border-2 border-green-200">
+              <Card className="shadow-lg mb-6 border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-600 rounded-lg">
+                    <div className="p-2 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-lg shadow-md">
                       <DollarSign className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-600">Estimated Monthly Cost</p>
-                      <p className="text-2xl font-bold text-green-700">{selectedTemplate.estimatedMonthlyCost}</p>
+                      <p className="text-xs font-medium text-emerald-700">Estimated Monthly Cost</p>
+                      <p className="text-2xl font-bold text-emerald-700">{selectedTemplate.estimatedMonthlyCost}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -358,11 +381,11 @@ export default function Quiz() {
 
               {/* Best For Section */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Best For</h4>
+                <h4 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-3">✅ Best For</h4>
                 <ul className="space-y-2">
                   {selectedTemplate.bestFor.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-gray-700">{item}</span>
                     </li>
                   ))}
@@ -371,14 +394,14 @@ export default function Quiz() {
 
               {/* AWS Services/Components */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">AWS Services Included</h4>
+                <h4 className="text-sm font-semibold text-emerald-600 uppercase tracking-wide mb-3">☁️ AWS Services Included</h4>
                 <div className="space-y-3">
                   {selectedTemplate.components.map((component, idx) => (
-                    <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div key={idx} className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-3 hover:shadow-md transition-shadow duration-200">
                       <div className="flex items-start gap-2">
-                        <Server className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <Server className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <div>
-                          <h5 className="font-semibold text-blue-900 text-sm">{component.service}</h5>
+                          <h5 className="font-semibold text-emerald-900 text-sm">{component.service}</h5>
                           <p className="text-xs text-gray-600 mt-1">{component.purpose}</p>
                         </div>
                       </div>
@@ -390,10 +413,9 @@ export default function Quiz() {
               {/* Download PDF Button */}
               <Button
                 size="lg"
-                variant="outline"
                 onClick={downloadPDF}
                 disabled={isDownloadingPDF}
-                className="w-full flex items-center justify-center gap-2 border-2 border-green-600 text-green-600 bg-white hover:bg-green-600 hover:text-white transition-all duration-300"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <Download className="w-4 h-4" />
                 {isDownloadingPDF ? 'Generating...' : 'Download as PDF'}
@@ -438,32 +460,69 @@ export default function Quiz() {
 
         {/* Right - Quiz Card */}
         <div className="relative">
-          <div className="absolute inset-1 rounded-3xl bg-gradient-to-br from-green-500 via-yellow-200 to-green-200 blur-xl animate-gradient opacity-90" />
+          {/* Dynamic gradient background that changes with progress */}
+          <div
+            className="absolute inset-1 rounded-3xl blur-xl animate-gradient transition-all duration-1000"
+            style={{
+              background: progress < 33
+                ? 'linear-gradient(135deg, #86efac 0%, #4ade80 100%)'
+                : progress < 66
+                ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)'
+                : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+              opacity: 0.75
+            }}
+          />
           <div className="relative bg-white rounded-3xl shadow-2xl border border-transparent bg-clip-padding p-4">
-            {/* Keyboard Shortcuts Help */}
-            <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2">
-              <Keyboard className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-blue-800">
-                <p className="font-semibold mb-0.5">Keyboard shortcuts enabled:</p>
-                <p>Press <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">1-{currentQ.options.length}</kbd> to select • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">Enter</kbd> to continue • <kbd className="px-1.5 py-0.5 bg-white border border-blue-300 rounded text-blue-900 font-mono text-xs">←</kbd> to go back</p>
+            {/* Keyboard Shortcuts - More compact */}
+            <div className="mb-3 p-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl flex items-start gap-2">
+              <Keyboard className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-emerald-700">
+                <p className="font-semibold mb-0.5">⌨️ Keyboard shortcuts:</p>
+                <p>Press <kbd className="px-1.5 py-0.5 bg-white border border-emerald-200 rounded text-emerald-700 font-mono text-xs shadow-sm">1-{currentQ.options.length}</kbd> to select • <kbd className="px-1.5 py-0.5 bg-white border border-emerald-200 rounded text-emerald-700 font-mono text-xs shadow-sm">Enter</kbd> next • <kbd className="px-1.5 py-0.5 bg-white border border-emerald-200 rounded text-emerald-700 font-mono text-xs shadow-sm">←</kbd> back</p>
               </div>
             </div>
 
+            {/* Progress indicator - More visual */}
             <div className="mb-4">
-              <div className="flex justify-between text-sm text-gray-600 mb-2">
-                <span>Question {currentQuestion + 1} of {shuffledQuestions.length}</span>
-                <span>{Math.round(progress)}% Complete</span>
+              <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <span className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xs font-bold">
+                    {currentQuestion + 1}
+                  </span>
+                  <span>of {shuffledQuestions.length}</span>
+                </span>
+                <span className="text-emerald-600 font-semibold">{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${progress}%`,
+                    background: progress < 33
+                      ? 'linear-gradient(90deg, #86efac 0%, #4ade80 100%)'
+                      : progress < 66
+                      ? 'linear-gradient(90deg, #4ade80 0%, #22c55e 100%)'
+                      : 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)'
+                  }}
+                />
+              </div>
             </div>
 
-            <Card className={`shadow-2xl rounded-2xl border border-gray-100 transition-opacity duration-150 ${transitioning ? 'opacity-50' : 'opacity-100'}`}>
-              <CardHeader className="pb-3">
+            <Card className={`shadow-2xl rounded-2xl border border-gray-100 transition-all duration-300 ${transitioning ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+              <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-white rounded-t-2xl">
+                {/* Category badge */}
+                {currentQ.category && (
+                  <div className="mb-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-sm">
+                      {currentQ.category}
+                    </span>
+                  </div>
+                )}
                 <CardTitle className="text-xl font-semibold text-gray-900">
                   {currentQ.question}
                 </CardTitle>
                 <CardDescription className="text-sm text-gray-500">
-                  Select the option that best describes your current setup
+                  💡 Choose the option that best fits your situation
                 </CardDescription>
               </CardHeader>
 
@@ -476,22 +535,31 @@ export default function Quiz() {
                   {currentQ.options.map((option, i) => (
                     <div
                       key={option.id}
-                      className={`group flex items-center space-x-3 border-2 rounded-xl p-3 transition-all cursor-pointer hover:bg-gray-50 hover:border-blue-300 ${
+                      className={`group relative flex items-center space-x-3 border-2 rounded-xl p-3 transition-all duration-200 cursor-pointer transform ${
                         selectedAnswer === option.id
-                          ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                          : 'border-gray-200'
+                          ? 'border-emerald-400 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-lg scale-[1.02] ring-2 ring-emerald-200'
+                          : 'border-gray-200 hover:border-emerald-300 hover:bg-gray-50 hover:shadow-md hover:scale-[1.01]'
                       }`}
                       onClick={() => handleAnswerChange(option.id)}
                     >
+                      {/* Checkmark for selected option */}
+                      {selectedAnswer === option.id && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-200">
+                          <CheckCircle2 className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+
                       {/* Keyboard Shortcut Badge */}
-                      <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono text-xs font-bold transition-all ${
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center font-mono text-xs font-bold transition-all shadow-sm ${
                         selectedAnswer === option.id
-                          ? 'bg-blue-500 border-blue-600 text-white'
-                          : 'bg-gray-100 border-gray-300 text-gray-600 group-hover:bg-blue-100 group-hover:border-blue-400 group-hover:text-blue-700'
+                          ? 'bg-gradient-to-br from-emerald-400 to-teal-500 border-emerald-500 text-white scale-110'
+                          : 'bg-white border-gray-300 text-gray-700 group-hover:bg-gradient-to-br group-hover:from-emerald-300 group-hover:to-teal-400 group-hover:border-emerald-400 group-hover:text-white group-hover:scale-105'
                       }`}>
                         {i + 1}
                       </div>
+
                       <RadioGroupItem value={option.id} id={option.id} className="flex-shrink-0" />
+
                       <Label htmlFor={option.id} className="flex-1 cursor-pointer text-sm font-medium">
                         {option.text}
                       </Label>
@@ -513,7 +581,7 @@ export default function Quiz() {
                   <Button
                     onClick={handleNext}
                     disabled={!selectedAnswer}
-                    className="group transition-all hover:scale-105 hover:shadow-md"
+                    className="group transition-all hover:scale-105 hover:shadow-md bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600"
                   >
                     {currentQuestion === shuffledQuestions.length - 1 ? 'Continue' : 'Next'}
                     {currentQuestion !== shuffledQuestions.length - 1 && (

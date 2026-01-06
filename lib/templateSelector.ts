@@ -48,6 +48,78 @@ export function selectTemplate(
 }
 
 // ============================================================================
+// RESOURCE WEIGHTS - Adjusted for Question Distribution
+// ============================================================================
+
+/**
+ * Resource-specific weights based on distinctiveness and question availability:
+ * - Enterprise resources (Q3 only): 30-35 points - MUST win on single question
+ * - Serverless resources (Q4 only): 25-30 points - MUST win on single question
+ * - CDN resources (Q5 only): 18-20 points - Strong indicator
+ * - HA resources (Q1+Q2): 10-12 points - Can accumulate from multiple Qs
+ * - Common resources: 3-8 points - Supporting role
+ */
+const RESOURCE_WEIGHTS: Record<string, number> = {
+  // HIGHEST PRIORITY - Enterprise (Q3 only - needs massive weight)
+  'ENTERPRISE': 35,
+  'COMPLIANCE_HIPAA': 35,
+  'COMPLIANCE_SOC2': 32,
+  'VPC': 28,
+  'ENCRYPTION': 25,
+  'WAF': 20,
+  'CLOUDTRAIL': 20,
+
+  // HIGH PRIORITY - Serverless (Q4 only - needs massive weight)
+  'LAMBDA': 30,
+  'CRITICAL_JOBS': 28,
+  'SQS': 25,
+  'EVENTBRIDGE': 18,
+
+  // MEDIUM-HIGH - CDN (Q5 only - strong indicator)
+  'S3': 20,
+  'CLOUDFRONT': 20,
+  'HIGH_BANDWIDTH': 15,
+  'MIGRATION': 12,
+
+  // MEDIUM - HA indicators (can score from Q1+Q2+Q8)
+  'HIGH_AVAILABILITY': 12,
+  'MULTI_AZ': 12,
+  'AUTO_SCALING': 10,
+  'LOAD_BALANCER': 10,
+  'HIGH_SCALE': 12,
+  'PRODUCTION_READY': 10,
+  'REDIS': 10,
+
+  // LOWER - Basic indicators (Q1+Q2+Q6)
+  'BASIC_SETUP': 10,
+  'SIMPLE_ARCH': 10,
+  'LOW_SCALE': 10,
+  'SINGLE_INSTANCE': 8,
+  'FULLY_MANAGED': 8,
+  'MANAGED_SERVICES': 6,
+
+  // SUPPORTING - Common resources (appear in many templates)
+  'CLOUDWATCH': 4,
+  'SNS': 4,
+  'ALERTING': 4,
+  '24X7': 5,
+  'BACKUP': 4,
+  'MEDIUM_SCALE': 8,
+  'AWS': 0,  // Everyone prefers AWS, doesn't help differentiate
+  'CUSTOM_CONFIG': 3,
+
+  // Default for unlisted resources
+  'DEFAULT': 5
+}
+
+/**
+ * Get weight for a resource
+ */
+function getResourceWeight(resource: string): number {
+  return RESOURCE_WEIGHTS[resource] || RESOURCE_WEIGHTS['DEFAULT']
+}
+
+// ============================================================================
 // SCORING FUNCTIONS
 // ============================================================================
 
@@ -94,10 +166,11 @@ function scoreAllTemplates(userResources: string[]): TemplateMatch[] {
 /**
  * Score a single template against user's resources
  *
- * Scoring Logic:
- * - +10 points for each REQUIRED resource matched
- * - +5 points for each OPTIONAL resource matched
- * - -20 points for each EXCLUDED resource present
+ * NEW Scoring Logic (Resource-Weighted):
+ * - REQUIRED resources: Full resource weight (5-35 points)
+ * - OPTIONAL resources: 50% of resource weight
+ * - EXCLUDED resources: -150% of resource weight (penalty)
+ * - Bonus: +30% if ALL required resources matched
  */
 function scoreTemplate(
   template: AwsTemplate,
@@ -105,45 +178,53 @@ function scoreTemplate(
 ): TemplateMatch {
   let score = 0
   const matchedResources: string[] = []
+  let requiredMatches = 0
 
-  // Check required resources (heavy weight)
+  // Check required resources (use full weight)
   template.requiredResources.forEach((required) => {
     if (userResources.includes(required)) {
-      score += 10
+      const weight = getResourceWeight(required)
+      score += weight
       matchedResources.push(required)
+      requiredMatches++
     }
   })
 
-  // Check optional resources (moderate weight)
+  // Check optional resources (50% of weight)
   template.optionalResources.forEach((optional) => {
     if (userResources.includes(optional)) {
-      score += 5
+      const weight = getResourceWeight(optional) * 0.5
+      score += weight
       matchedResources.push(optional)
     }
   })
 
-  // Check excluded resources (penalty)
+  // Check excluded resources (1.5x penalty)
   template.excludedResources.forEach((excluded) => {
     if (userResources.includes(excluded)) {
-      score -= 20
+      const weight = getResourceWeight(excluded) * 1.5
+      score -= weight
     }
   })
+
+  // Bonus: ALL required resources matched = +30% boost
+  if (template.requiredResources.length > 0 &&
+      requiredMatches === template.requiredResources.length) {
+    score *= 1.3
+  }
 
   // Avoid negative scores
   score = Math.max(0, score)
 
-  // Calculate match percentage
-  const totalPossibleScore =
-    template.requiredResources.length * 10 +
-    template.optionalResources.length * 5
-  const matchPercentage = totalPossibleScore > 0
-    ? Math.round((score / totalPossibleScore) * 100)
-    : 0
+  // Calculate match percentage based on required resources
+  const matchPercentage = template.requiredResources.length > 0
+    ? Math.round((requiredMatches / template.requiredResources.length) * 100)
+    : 100
 
   return {
     templateId: template.id,
     template,
-    matchScore: score,
+    matchScore: Math.round(score),
     matchPercentage,
     matchedResources,
     userResources
