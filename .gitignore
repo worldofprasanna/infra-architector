@@ -40,5 +40,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#python
+# python
 .venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# temporary diagram files
+*.png
+!public/**/*.png
+migration-*.sql

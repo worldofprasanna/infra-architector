@@ -155,7 +155,6 @@ export default function Quiz() {
         },
         body: JSON.stringify({
           email,
-          answers,
           awsResources: resources,
           selectedTemplate: template.id,
           estimatedMonthlyCost: template.estimatedMonthlyCost
