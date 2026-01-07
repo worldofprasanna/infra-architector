@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateArchitecturePDF, type PDFGenerationData } from '@/lib/pdfGenerator'
-import { generateDiagram, cleanupDiagram } from '@/lib/diagramGenerator'
+import { generateDiagram } from '@/lib/diagramGenerator'
 
 export async function POST(request: NextRequest) {
   let diagramPath: string | undefined
@@ -27,20 +27,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate architecture diagram
-    console.log(`Generating diagram for template: ${template.id}`)
+    // Get static architecture diagram path
+    console.log(`Getting static diagram for template: ${template.id}`)
     const diagramResult = await generateDiagram(template.id)
 
     if (!diagramResult.success || !diagramResult.diagramPath) {
-      console.error('Diagram generation failed:', diagramResult.error)
+      console.error('Failed to get diagram path:', diagramResult.error)
       return NextResponse.json(
-        { error: `Failed to generate diagram: ${diagramResult.error}` },
+        { error: `Failed to get diagram: ${diagramResult.error}` },
         { status: 500 }
       )
     }
 
     diagramPath = diagramResult.diagramPath
-    console.log(`Diagram generated at: ${diagramPath}`)
+    console.log(`Using static diagram at: ${diagramPath}`)
 
     // Generate PDF with diagram
     const pdf = await generateArchitecturePDF({
@@ -54,8 +54,7 @@ export async function POST(request: NextRequest) {
     // Convert PDF to buffer
     const pdfBuffer = Buffer.from(pdf.output('arraybuffer'))
 
-    // Clean up diagram after PDF is generated
-    await cleanupDiagram(diagramPath)
+    // No cleanup needed - using static images
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
@@ -69,10 +68,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error generating PDF:', error)
 
-    // Clean up diagram on error
-    if (diagramPath) {
-      await cleanupDiagram(diagramPath)
-    }
+    // No cleanup needed - using static images
 
     return NextResponse.json(
       { error: 'Failed to generate PDF' },
