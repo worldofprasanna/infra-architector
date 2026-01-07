@@ -109,10 +109,11 @@ export const generateArchitecturePDF = async (data: PDFGenerationData): Promise<
 
   // ============================================================================
   // ARCHITECTURE DIAGRAM - FULL PAGE
+  // Note: Uses static images from public/architectures directory
   // ============================================================================
   if (data.diagramPath) {
     try {
-      console.log('Embedding diagram from path:', data.diagramPath)
+      console.log('Embedding static diagram from path:', data.diagramPath)
 
       // Verify file exists and has content
       const stats = fs.statSync(data.diagramPath)
