@@ -18,7 +18,6 @@ export default function ClientLogos() {
         <Image src="/clients/hashmato.png" alt="hashmato" width={200} height={68} className="h-5 w-auto" />
         <Image src="/clients/labfinder.png" alt="labfinder" width={200} height={68} className="h-10 w-auto" />
         <Image src="/clients/IIID.png" alt="IIID" width={200} height={68} className="h-8 w-auto" />
-        <Image src="/clients/bespoke.png" alt="bespoke" width={200} height={68} className="h-8 w-auto" />
       </div>
     </div>
   )
